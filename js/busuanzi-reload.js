@@ -1,25 +1,38 @@
 (() => {
   const SCRIPT_ID = 'busuanzi-reloader';
-  const BSZ_SRC = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+  const BSZ_SRCS = [
+    'https://busuanzi.icodeq.com/busuanzi.pure.mini.js',
+    'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js'
+  ];
 
-  const appendScript = () => {
-    if (!document.body) return;
-    const prev = document.getElementById(SCRIPT_ID);
-    if (prev) prev.remove();
+  const injectScript = (index = 0) => {
+    if (!document.body || index >= BSZ_SRCS.length) {
+      console.warn('[Busuanzi] 所有脚本地址均加载失败，可能被浏览器插件拦截');
+      return;
+    }
 
     const script = document.createElement('script');
-    script.id = SCRIPT_ID;
+    script.id = `${SCRIPT_ID}-${index}`;
     script.async = true;
     script.defer = true;
     script.dataset.pjax = 'true';
-    script.src = `${BSZ_SRC}?_=${Date.now()}`;
+    script.src = `${BSZ_SRCS[index]}?_=${Date.now()}`;
+    script.onerror = () => {
+      script.remove();
+      injectScript(index + 1);
+    };
     document.body.appendChild(script);
   };
 
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    appendScript();
-  } else {
+  const appendScript = () => {
+    document.querySelectorAll(`[id^="${SCRIPT_ID}"]`).forEach(el => el.remove());
+    injectScript();
+  };
+
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', appendScript, { once: true });
+  } else {
+    appendScript();
   }
 
   document.addEventListener('pjax:complete', appendScript);
