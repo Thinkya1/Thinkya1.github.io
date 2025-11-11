@@ -5,6 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>可以成为我的恋人吗？</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .douyin-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #fe2c55;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .douyin-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .douyin-icon {
+            margin-right: 8px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -15,6 +39,11 @@
             <button id="no">不要</button>
         </div>
     </div>
+
+    <a href="#" class="douyin-link" target="_blank">
+        <i class="douyin-icon">🎵</i>
+        点我试试
+    </a>
 
     <script src="script.js"></script>
 </body>
