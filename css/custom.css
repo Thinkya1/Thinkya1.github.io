@@ -76,48 +76,6 @@ a:hover {
   color: var(--apple-text);
 }
 
-blockquote {
-  border-radius: 20px;
-  border-left: 0;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(0, 113, 227, 0.12);
-  padding: 24px 28px;
-  font-size: 1.05rem;
-  color: #1d1d1f;
-}
-
-figure.highlight,
-pre {
-  border-radius: 24px;
-  background: #0b0b0f !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 25px 60px rgba(4, 6, 17, 0.6);
-  margin: 2rem 0;
-}
-
-figure.highlight pre,
-code,
-kbd {
-  font-family: var(--code-font);
-  font-size: 0.95rem;
-  color: #f5f5f7;
-}
-
-figure.highlight .gutter pre {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-code:not([class]) {
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  background: rgba(0, 113, 227, 0.12);
-  color: var(--apple-blue);
-}
-
-.post-meta {
-  font-weight: 500;
-  text-align: center;
-}
 
 #nav,
 #nav a {
@@ -129,4 +87,53 @@ code:not([class]) {
   background: #f5f5f7;
   color: var(--apple-muted);
   font-size: 0.95rem;
+}
+
+html[data-theme='dark'] {
+  --apple-bg: #050505;
+  --apple-card: #16161a;
+  --apple-border: rgba(255, 255, 255, 0.12);
+  --apple-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  --apple-text: #f5f5f7;
+  --apple-muted: #a1a1a6;
+  --apple-blue: #4da3ff;
+}
+
+html[data-theme='dark'] body {
+  background-color: var(--apple-bg);
+  color: var(--apple-text);
+}
+
+html[data-theme='dark'] #page-header {
+  background: linear-gradient(120deg, #14151b 0%, #06070b 100%) !important;
+  color: var(--apple-text);
+}
+
+html[data-theme='dark'] #recent-posts .recent-post-item,
+html[data-theme='dark'] #aside-content .card-widget {
+  border: 1px solid var(--apple-border);
+  background: var(--apple-card);
+  box-shadow: var(--apple-shadow);
+}
+
+html[data-theme='dark'] #recent-posts .recent-post-item .recent-post-info .article-title,
+html[data-theme='dark'] .card-widget .item-headline span,
+html[data-theme='dark'] #recent-posts .recent-post-item .recent-post-info .content {
+  color: var(--apple-text);
+}
+
+html[data-theme='dark'] #recent-posts .recent-post-item .recent-post-info .article-meta-wrap,
+html[data-theme='dark'] .post-meta {
+  color: var(--apple-muted);
+}
+
+
+html[data-theme='dark'] #nav,
+html[data-theme='dark'] #nav a {
+  color: var(--apple-text) !important;
+}
+
+html[data-theme='dark'] #footer {
+  background: #0b0b0f;
+  color: var(--apple-muted);
 }
