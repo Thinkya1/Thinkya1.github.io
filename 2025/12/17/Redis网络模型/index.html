@@ -1,0 +1,193 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Redis网络模型 | 彬子的Blog</title><meta name="author" content="彬子"><meta name="copyright" content="彬子"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Redis网络模型（io多路复用） 阻塞IO(Blocking IO) 假设服务端只开启一个线程处理请求，第一个请求到来，开始调用内核read函数，然后就会发生阻塞，第二个请求到来时服务端将无法处理，只能等第一个请求读取完成。这种方式的缺点很明显，每次只能处理一个请求，无法发挥cpu多核优势，性能低下。 为了解决这个问题，我们可以引入多线程，这样就可以同时处理多个请求了，但服务端可能同时有成千上万">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis网络模型">
+<meta property="og:url" content="https://blog.binzi.top/2025/12/17/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="彬子的Blog">
+<meta property="og:description" content="Redis网络模型（io多路复用） 阻塞IO(Blocking IO) 假设服务端只开启一个线程处理请求，第一个请求到来，开始调用内核read函数，然后就会发生阻塞，第二个请求到来时服务端将无法处理，只能等第一个请求读取完成。这种方式的缺点很明显，每次只能处理一个请求，无法发挥cpu多核优势，性能低下。 为了解决这个问题，我们可以引入多线程，这样就可以同时处理多个请求了，但服务端可能同时有成千上万">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.binzi.top/img/covers/apple-hero-2.svg">
+<meta property="article:published_time" content="2025-12-17T13:43:00.000Z">
+<meta property="article:modified_time" content="2025-12-29T10:26:45.214Z">
+<meta property="article:author" content="彬子">
+<meta property="article:tag" content="Redis">
+<meta property="article:tag" content="网络模型">
+<meta property="article:tag" content="IO多路复用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.binzi.top/img/covers/apple-hero-2.svg"><link rel="shortcut icon" href="/img/%E5%B7%B2%E9%80%80%E7%BD%91.jpg"><link rel="canonical" href="https://blog.binzi.top/2025/12/17/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.2.2"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Redis网络模型',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  isShuoshuo: false
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/qq.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">23</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">29</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> List</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/covers/apple-hero-2.svg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">彬子的Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">Redis网络模型</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> List</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Redis网络模型</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-12-17T13:43:00.000Z" title="发表于 2025-12-17 21:43:00">2025-12-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-12-29T10:26:45.214Z" title="更新于 2025-12-29 18:26:45">2025-12-29</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1>Redis网络模型（io多路复用）</h1>
+<p><strong>阻塞IO(Blocking IO)</strong></p>
+<p>假设服务端只开启一个线程处理请求，第一个请求到来，开始调用内核read函数，然后就会发生阻塞，第二个请求到来时服务端将无法处理，只能等第一个请求读取完成。这种方式的缺点很明显，每次只能处理一个请求，无法发挥cpu多核优势，性能低下。</p>
+<p>为了解决这个问题，我们可以引入多线程，这样就可以同时处理多个请求了，但服务端可能同时有成千上万的请求需要处理，随之而来的是线程数膨胀，频繁创建、销毁线程带来的性能影响，当然我们可以使用线程池，但服务能处理的总体数量就会受限于线程池线程数量。</p>
+<p><strong>非阻塞IO(NON-Blocking IO)</strong></p>
+<p>相比阻塞IO，非阻塞IO会立即返回，调用者不会阻塞，此时可以做一些其它事情，例如处理其它请求。但是非阻塞IO需要主动轮询是否有数据需要处理，且这种轮询需要从用户态切换到内核态这，假如没有数据产生就会有很多空轮询，白白浪费cpu资源。</p>
+<p>阻塞IO、非阻塞IO，要么需要开启更多线程去处理IO，要么需要从用户态切换到内核态轮询IO事件，那么有没有一种机制，用户程序只需要将请求提交给内核，由内核用少量的线程去监听，有事件就通知用户程序呢？这就是IO多路复用。</p>
+<h3 id="IO多路复用-IO-Multiplexing"><strong>IO多路复用(IO Multiplexing)</strong></h3>
+<p><strong>IO多路复用机制是指一个线程处理多个IO流，多路是指网络连接，复用指的是同一个线程。</strong><br>
+如果简单从图上看IO多路复用相比阻塞IO似乎并没有什么高明之处，假设服务只处理少量的连接，那么相比阻塞IO确实没有太大的提升，但如果连接数非常多，差距就会立竿见影。<br>
+首先IO多路复用会提交一批需要监听的文件句柄（socket也是一种文件句柄）到内核，由内核开启一个线程负责监听，把轮询工作交给内核，当有事件发生时，由内核通知用户程序。这不需要用户程序开启更多的线程去处理连接，也不需要用户程序切换到内核态去轮询，用一个线程就能处理大量网络IO请求。<br>
+redis底层采用的就是IO多路复用模型，实际上基本所有中间件在处理网络IO这一块都会使用到IO多路复用，如kafka,rocketmq等，所以本次学习之后对其它中间件的理解也是很有帮助的。</p>
+<h2 id="select-poll-epoll"><strong>select/poll/epoll</strong></h2>
+<p>linux最开始提供的是select函数，方法如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select(int nfds, fd_set *r, fd_set *w, fd_set *e, struct timeval *timeout)</span><br></pre></td></tr></table></figure>
+<p>该方法需要传递3个集合，r,e,w分别表示读、写、异常事件集合。集合类型是bitmap，通过0/1表示该位置的fd(文件描述符，socket也是其中一种)是否关心对应读、写、异常事件。例如我们对fd为1和2的读事件关心，r参数的第1,2个bit就设置为1。</p>
+<p><strong>用户进程调用select函数将关心的事件传递给内核系统，然后就会阻塞，直到传递的事件至少有一个发生时，方法调用会返回。内核返回时，同样把发生的事件用这3个参数返回回来，如r参数第1个bit为1表示fd为1的发生读事件，第2个bit依然为0，表示fd为2的没有发生读事件。用户进程调用时传递关心的事件，内核返回时返回发生的事件。</strong></p>
+<p>select存在的问题：</p>
+<ol>
+<li>大小有限制。为1024，由于每次select函数调用都需要在用户空间和内核空间传递这些参数，为了提升拷贝效率，linux限制最大为1024。</li>
+<li>这3个集合有相应事件触发时，会被内核修改，所以每次调用select方法都需要重新设置这3个集合的内容。</li>
+<li>当有事件触发select方法返回，需要遍历集合才能找到就绪的文件描述符，例如传1024个读事件，只有一个读事件发生，需要遍历1024个才能找到这一个。</li>
+<li>同样在内核级别，每次需要遍历集合查看有哪些事件发生，效率低下。</li>
+</ol>
+<p>poll函数对select函数做了一些改进</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">poll(struct pollfd *fds, int nfds, int timeout)</span><br><span class="line"></span><br><span class="line">struct pollfd &#123;</span><br><span class="line">	int fd;</span><br><span class="line">	short events;</span><br><span class="line">	short revents;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>poll函数需要传一个pollfd结构数组，其中fd表示文件描述符，events表示关心的事件，revents表示发生的事件，当有事件发生时，内核通过这个参数返回回来。</p>
+<p>poll相比select的改进：</p>
+<ol>
+<li>传不固定大小的数组，没有1024的限制了（问题1）</li>
+<li>将关心的事件和实际发生的事件分开，不需要每次都重新设置参数（问题2）。例如poll数组传1024个fd和事件，实际只有一个事件发生，那么只需要重置一下这个fd的revent即可，而select需要重置1024个bit。</li>
+</ol>
+<p>poll没有解决select的问题3和4。另外，虽然poll没有1024个大小的限制，但每次依然需要在用户和内核空间传输这些内容，数量大时效率依然较低。</p>
+<p>这几个问题的根本实际很简单，核心问题是select/poll方法对于内核来说是无状态的，内核不会保存用户调用传递的数据，所以每次都是全量在用户和内核空间来回拷贝，如果调用时传给内核就保存起来，有新增文件描述符需要关注就再次调用增量添加，有事件触发时就只返回对应的文件描述符，那么问题就迎刃而解了，这就是epoll做的事情。</p>
+<p>epoll对应3个方法</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int epoll_create(int size);</span><br><span class="line">int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);</span><br><span class="line">int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);</span><br></pre></td></tr></table></figure>
+<p>epoll_create负责创建一个上下文，用于存储数据，底层是用红黑树，以后的操作就都在这个上下文上进行。<br>
+epoll_ctl负责将文件描述和所关心的事件注册到上下文。<br>
+epoll_wait用于等待事件的发生，当有有事件触发，就只返回对应的文件描述符了。</p>
+<p>select 底层是位图数组，限制就是会被数组长度限制，只有1024大小，内核轮询这个事件是否就绪，如果有的话内核态会把用户态的参数拷进内核空间然后检测每个的状态，select() 返回时，内核会把修改后的 fd_set（就绪标记）拷回用户空间，这样子的开销是比较大的，每次都需要扫描，拷贝。</p>
+<p>poll底层的话是个链表，他的话解决了select的大小限制问题，但是还是没有解决用户态与内核态之间的问题</p>
+<p>epoll的话他底层是个红黑树，他有三个函数，creat，ctl，wait，他的改进是用户在修改的时候，内核会把信息拷入内核数据结构，当内核返回就绪事件时候，epoll_wait会把准备好的事件批量拷贝到用户提供的缓冲区</p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Redis/">Redis</a><a class="post-meta__tags" href="/tags/%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/">网络模型</a><a class="post-meta__tags" href="/tags/IO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/">IO多路复用</a></div><div class="post-share"><div class="social-share" data-image="/img/covers/apple-hero-2.svg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2025/12/17/AIO%20BIO%20NIO%E5%8C%BA%E5%88%AB%EF%BC%9F/" title="AIO BIO NIO区别？"><img class="cover" src="/img/covers/apple-hero-2.svg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">AIO BIO NIO区别？</div></div><div class="info-2"><div class="info-item-1">AIO BIO NIO区别？ BIO（同步阻塞 I/O） BIO 是传统的 I/O 模式，全称为 Block I/O，也叫同步阻塞 I/O。在 BIO 模式下，当我们执行 I/O 操作时，比如读取文件或者网络请求，程序会 阻塞，直到 I/O 操作完成后，才能继续执行后面的代码。也就是说，当一个线程在等待 I/O 完成时，它是处于阻塞状态的，不能做其他事情。 NIO（同步非阻塞 I/O） 一个线程管理多个连接 NIO 是对传统...</div></div></div></a><a class="pagination-related" href="/2025/11/28/ConcurrentHashMap%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86/" title="ConcurrentHashMap底层原理"><img class="cover" src="/img/covers/apple-hero-3.svg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">ConcurrentHashMap底层原理</div></div><div class="info-2"><div class="info-item-1">...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2025/11/14/Redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81redisson%E7%9C%8B%E9%97%A8%E7%8B%97%E6%9C%BA%E5%88%B6/" title="Redis分布式锁redisson看门狗机制"><img class="cover" src="/img/covers/apple-hero-1.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-11-14</div><div class="info-item-2">Redis分布式锁redisson看门狗机制</div></div><div class="info-2"><div class="info-item-1">Redis分布式锁方案 使用 Redis 的 SET key value NX EX实现分布式锁时，主要问题是锁过期时间不好设置：如果设置过短，业务未完成锁就过期；设置过长，会降低系统并发度。为此可以使用 Redisson 封装的分布式锁，它内部通过「看门狗机制」自动续期锁（默认锁 30 秒，每 10 秒续期一次），同时通过 Lua...</div></div></div></a><a class="pagination-related" href="/2025/12/21/Redis%E7%9A%84ziplist%E5%88%B0ListPack/" title="Redis的ziplist到ListPack"><img class="cover" src="/img/covers/apple-hero-3.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-12-21</div><div class="info-item-2">Redis的ziplist到ListPack</div></div><div class="info-2"><div class="info-item-1">Redis的压缩列表ziplist到紧凑列表listpack ziplist 的结构（老版本用的） 大概长这样： 12345[zlbytes][zltail][zllen][entry1][entry2]...[entryN][0xFF]● *zlbytes*，记录整个压缩列表占用对内存字节数；● *zltail*，记录压缩列表「尾部」节点距离起始地址由多少字节，也就是列表尾的偏移量；●...</div></div></div></a><a class="pagination-related" href="/2025/10/27/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E8%BF%87%E6%9C%9F%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/" title="Redis的数据过期淘汰策略"><img class="cover" src="/img/covers/apple-hero-1.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-10-27</div><div class="info-item-2">Redis的数据过期淘汰策略</div></div><div class="info-2"><div class="info-item-1">Redis 的数据过期策略 Redis 采用 「惰性删除 + 定期删除」 两种策略相结合的方式，在 CPU 性能开销 与 内存占用 之间取得平衡。  一、惰性删除（Lazy Expiration） 当客户端访问或修改某个键时，Redis 会在操作前调用 expireIfNeeded() 函数检查该键是否已过期：  若已过期： Redis 会立即删除该键，然后向客户端返回 null。 删除方式由配置项...</div></div></div></a><a class="pagination-related" href="/2025/11/14/redis%E5%81%9A%E4%B8%BA%E7%BC%93%E5%AD%98%EF%BC%8Cmysql%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A6%82%E4%BD%95%E4%B8%8Eredis%E8%BF%9B%E8%A1%8C%E5%90%8C%E6%AD%A5%E5%91%A2%EF%BC%9F%EF%BC%88%E5%8F%8C%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%89/" title="redis做为缓存，mysql的数据如何与redis进行同步呢？（双写一致性）"><img class="cover" src="/img/covers/apple-hero-1.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-11-14</div><div class="info-item-2">redis做为缓存，mysql的数据如何与redis进行同步呢？（双写一致性）</div></div><div class="info-2"><div class="info-item-1">redis做为缓存，mysql的数据如何与redis进行同步呢？（双写一致性） 在项目中，我们主要通过 Redisson 的读写锁机制...</div></div></div></a><a class="pagination-related" href="/2025/10/25/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%EF%BC%8C%E9%9B%AA%E5%B4%A9%EF%BC%8C%E5%87%BB%E7%A9%BF/" title="缓存穿透，雪崩，击穿"><img class="cover" src="/img/covers/apple-hero-3.svg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-10-25</div><div class="info-item-2">缓存穿透，雪崩，击穿</div></div><div class="info-2"><div class="info-item-1">缓存穿透 缓存穿透指的是：一个缓存和数据库中都不存在的数据，由于数据库无法写入缓存，导致频繁请求直接打到数据库，从而造成数据库压力过大甚至被“打穿”。 常见的解决方法包括：缓存空值 或 布隆过滤器。 布隆过滤器由一个全 0 的位图数组和 n 个哈希函数组成。当一个数据在请求缓存前，会先经过布隆过滤器。过滤器会通过 n 个哈希函数计算出 n 个哈希值，再分别对数组长度取模，并将对应的数组下标置为...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/qq.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">彬子</div><div class="author-info-description">彬子yy</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">23</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">29</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Thinkya1"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/Thinkya1" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:2856148657@qq.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text">Redis网络模型（io多路复用）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#IO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8-IO-Multiplexing"><span class="toc-number">1.0.1.</span> <span class="toc-text">IO多路复用(IO Multiplexing)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#select-poll-epoll"><span class="toc-number">1.1.</span> <span class="toc-text">select&#x2F;poll&#x2F;epoll</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/12/28/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6%E4%B8%8E%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8/" title="类加载机制与类加载器"><img src="/img/covers/apple-hero-2.svg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="类加载机制与类加载器"/></a><div class="content"><a class="title" href="/2025/12/28/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6%E4%B8%8E%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8/" title="类加载机制与类加载器">类加载机制与类加载器</a><time datetime="2025-12-28T11:13:00.000Z" title="发表于 2025-12-28 19:13:00">2025-12-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/12/27/MySQL%E7%9A%84MVCC/" title="MySQL的MVCC"><img src="/img/covers/apple-hero-2.svg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MySQL的MVCC"/></a><div class="content"><a class="title" href="/2025/12/27/MySQL%E7%9A%84MVCC/" title="MySQL的MVCC">MySQL的MVCC</a><time datetime="2025-12-26T17:10:00.000Z" title="发表于 2025-12-27 01:10:00">2025-12-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/12/25/SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B/" title="SpringMVC执行流程"><img src="/img/covers/apple-hero-3.svg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="SpringMVC执行流程"/></a><div class="content"><a class="title" href="/2025/12/25/SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B/" title="SpringMVC执行流程">SpringMVC执行流程</a><time datetime="2025-12-25T13:05:00.000Z" title="发表于 2025-12-25 21:05:00">2025-12-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/12/24/MySqL%E4%BA%8B%E5%8A%A1%E7%89%B9%E6%80%A7%EF%BC%8C%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/" title="MySqL事务特性，隔离级别"><img src="/img/covers/apple-hero-3.svg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MySqL事务特性，隔离级别"/></a><div class="content"><a class="title" href="/2025/12/24/MySqL%E4%BA%8B%E5%8A%A1%E7%89%B9%E6%80%A7%EF%BC%8C%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/" title="MySqL事务特性，隔离级别">MySqL事务特性，隔离级别</a><time datetime="2025-12-24T14:34:00.000Z" title="发表于 2025-12-24 22:34:00">2025-12-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/12/21/Redis%E7%9A%84ziplist%E5%88%B0ListPack/" title="Redis的ziplist到ListPack"><img src="/img/covers/apple-hero-3.svg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Redis的ziplist到ListPack"/></a><div class="content"><a class="title" href="/2025/12/21/Redis%E7%9A%84ziplist%E5%88%B0ListPack/" title="Redis的ziplist到ListPack">Redis的ziplist到ListPack</a><time datetime="2025-12-21T14:24:00.000Z" title="发表于 2025-12-21 22:24:00">2025-12-21</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2025 By 彬子</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.2.2"></script><script src="/js/main.js?v=5.2.2"></script><div class="js-pjax"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/metingjs/dist/Meting.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

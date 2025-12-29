@@ -4,11 +4,324 @@
   
     
     <entry>
+      <title>类加载机制与类加载器</title>
+      <link href="/2025/12/28/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6%E4%B8%8E%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8/"/>
+      <url>/2025/12/28/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6%E4%B8%8E%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8/</url>
+      
+        <content type="html"><![CDATA[<h1>类加载机制/类加载器</h1><h4 id="类加载的完整流程（生命周期）">类加载的完整流程（生命周期）</h4><p><img src="/img/covers/image-20251228153154941.png" alt="image-20251228153154941"></p><p>类从加载到卸载经历 5 个阶段，其中<strong>加载、验证、准备、初始化、卸载</strong>的顺序是固定的，<strong>解析</strong>阶段可能与初始化交叉进行：</p><h5 id="1-加载（Loading）">1. 加载（Loading）</h5><ul><li><strong>任务</strong>：通过类的全限定名（如<code>com.example.User</code>）获取其字节码数据，并生成<code>Class</code>对象。</li><li><strong>来源</strong>：字节码可来自本地文件、网络、数据库、动态生成（如 CGLib）等。</li><li><strong>关键组件</strong>：类加载器（ClassLoader）负责此阶段。</li></ul><h5 id="2-验证（Verification）">2. 验证（Verification）</h5><ul><li><p><strong>任务</strong>：确保字节码符合 JVM 规范，避免恶意或无效字节码危害虚拟机安全。</p></li><li><p>验证内容</p><p>：</p><ul><li>文件格式验证（魔数、版本号等）</li><li>元数据验证（类继承关系、字段方法合法性）</li><li>字节码验证（指令逻辑正确性）</li><li>符号引用验证（常量池引用有效性）</li></ul></li></ul><h5 id="3-准备（Preparation）">3. 准备（Preparation）</h5><ul><li><p>任务</p><p>：为类的静态变量分配内存并设置</p><p>初始默认值</p><p>（非显式赋值）。</p><ul><li>例如：<code>public static int a = 10;</code>在准备阶段<code>a</code>的值为<code>0</code>（int 默认值），显式赋值在初始化阶段执行。</li></ul></li><li><p><strong>注意</strong>：仅静态变量（类变量）参与此阶段，实例变量在对象创建时分配内存。</p></li></ul><h5 id="4-解析（Resolution）">4. 解析（Resolution）</h5><ul><li><strong>任务</strong>：将常量池中的<strong>符号引用</strong>（如类名、方法名）转换为<strong>直接引用</strong>（内存地址）。</li><li><strong>触发时机</strong>：通常在初始化前完成，但某些情况下（如动态绑定）会延迟到运行时解析。</li></ul><h5 id="5-初始化（Initialization）执行-clinit-，真正赋值">5. 初始化（Initialization）执行 <code>&lt;clinit&gt;</code>，真正赋值</h5><ul><li><p>任务</p><p>：执行类的初始化逻辑，包括：</p><ul><li>静态变量的显式赋值</li><li>静态代码块（<code>static &#123;&#125;</code>）的执行</li></ul></li><li><p>顺序规则</p><p>：</p><ul><li>父类初始化优先于子类</li><li>静态变量和静态代码块按代码出现顺序执行</li></ul></li><li><p>触发条件</p><p>（主动使用）：</p><ul><li>创建实例、调用静态方法 / 变量</li><li>反射（<code>Class.forName()</code>）</li><li>启动类（含<code>main</code>方法的类）</li><li>初始化子类时触发父类初始化</li></ul></li></ul><h2 id="什么时候加载类？">什么时候加载类？</h2><p>JVM规范并没有强制约束，交给虚拟机具体实现来自由把握</p><h2 id="类加载器">类加载器</h2><p>类加载器负责 “加载” 阶段，通过全限定名获取字节码。JVM 中存在以下几类加载器：</p><h5 id="1-内置类加载器">1. 内置类加载器</h5><ul><li><p><strong>启动类加载器（Bootstrap ClassLoader）</strong></p><ul><li><p>由 C++ 实现（非 Java 类），负责加载 JDK 核心类库（如<code>rt.jar</code>、<code>resources.jar</code>）。</p></li><li><p><strong>最顶层</strong>负责加载：</p><p><code>java.lang.*</code></p><p><code>java.util.*</code></p><p>加载路径：<code>JAVA_HOME/lib</code><strong>由 C/C++ 实现</strong></p></li><li><p>父加载器为<code>null</code>，不继承<code>java.lang.ClassLoader</code>。</p></li></ul></li><li><p><strong>扩展类加载器（Extension ClassLoader）</strong></p><ul><li>加载 JDK 扩展目录（如<code>jre/lib/ext</code>）中的类。</li><li>父加载器为启动类加载器。</li></ul></li><li><p><strong>应用程序类加载器（Application ClassLoader）</strong></p><ul><li>加载用户类路径（<code>classpath</code>）下的类，是默认的类加载器。</li><li>父加载器为扩展类加载器。</li></ul></li></ul><h5 id="2-自定义类加载器">2. 自定义类加载器</h5><ul><li>继承<code>java.lang.ClassLoader</code>，重写<code>findClass()</code>方法（推荐）或<code>loadClass()</code>方法。</li><li>应用场景：热部署、加密类解密、从非标准来源加载类等。</li></ul><h5 id="3-双亲委派模型">3. 双亲委派模型</h5><ul><li><strong>定义</strong>：类加载时，先委托父加载器加载，父加载器无法加载时才由当前加载器尝试加载。</li><li><strong>流程</strong>：<br>自定义加载器 → 应用程序类加载器 → 扩展类加载器 → 启动类加载器<br>（若所有父加载器均无法加载，则由当前加载器调用<code>findClass()</code>加载）</li><li><strong>作用</strong>：<ul><li>避免类重复加载（保证同一个类在 JVM 中唯一）。</li><li>保护核心类库（如<code>java.lang.String</code>不会被恶意替换）。</li></ul></li><li><strong>破坏双亲委派</strong>：<br>可通过重写<code>loadClass()</code>方法实现（如 Tomcat 的类加载器需隔离不同 Web 应用）。</li></ul><h2 id="类的卸载">类的卸载</h2><ul><li>当类的<code>Class</code>对象不再被引用，且加载该类的类加载器被回收时，类会被卸载。</li><li>条件：<ul><li>该类的所有实例已被回收。</li><li>该类的<code>Class</code>对象无引用。</li><li>加载该类的类加载器已被回收。</li></ul></li><li>注意：JVM 内置加载器加载的类（如核心类库）通常不会被卸载，缘于其加载器始终存在。</li></ul><h2 id="关键特性与问题">关键特性与问题</h2><ol><li><strong>类的唯一性</strong><br><strong>一个类的唯一性由 “全限定名 + 类加载器” 共同决定。不同加载器加载的同全限定名类视为不同类。</strong></li><li><strong>延迟加载与预加载</strong><ul><li>大多数类采用延迟加载（首次使用时加载）。</li><li>少数类（如<code>java.lang.Object</code>）会被 JVM 预加载。</li></ul></li><li><strong>常见异常</strong><ul><li><code>ClassNotFoundException</code>：类加载器无法找到指定类（如类路径错误）。</li><li><code>NoClassDefFoundError</code>：类编译时存在，但运行时未找到（如依赖缺失）。</li></ul></li></ol><h2 id="破坏双亲委派模型：">破坏双亲委派模型：</h2><p>自定义加载器的话，需要继承 ClassLoader 。如果我们不想打破双亲委派模型，就重写 ClassLoader 类中的 findClass() 方法即可，无法被父类加载器加载的类最终会通过这个方法被加载。但是，如果想打破双亲委派模型<strong>则需要重写 loadClass() 方法。</strong></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Java </tag>
+            
+            <tag> JVM </tag>
+            
+            <tag> 类加载 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>MySQL的MVCC</title>
+      <link href="/2025/12/27/MySQL%E7%9A%84MVCC/"/>
+      <url>/2025/12/27/MySQL%E7%9A%84MVCC/</url>
+      
+        <content type="html"><![CDATA[<h1>MVCC多版本并发控制</h1><p>**MVCC 的目标：**<em><strong>让读操作尽量不阻塞写操作，写操作也尽量不阻塞读操作。</strong></em></p><h5 id="核心机制：">核心机制：</h5><h4 id="MVCC主要依赖以下机制实现：">MVCC主要依赖以下机制实现：</h4><p><strong>数据库行记录中的隐藏字段</strong>：最近修改本行数据的事务id、回滚指针指向本行数据的上个版本（其实是指向undo，通过undo计算上一个版本）</p><p>•<strong>undo log</strong>：回滚日志，在insert、delete、update时产生，记载了与操作相反的操作，比如delete操作对应了一条insert日志</p><p>•<strong>readview</strong>：快照读SQL执行时产生的读视图，生成的一个快照，记录了以下字段，用于数据的可见性判断：◦</p><ol><li>当前活跃的事务id集合◦</li><li>最小活跃事务id◦</li><li>预分配事务id，即应该分配的下一个事务id◦</li><li>readview创建者id，即本事务id</li></ol><h4 id="MVCC如何判断数据的可见性？">MVCC如何判断数据的可见性？</h4><p>首先根据本条数据的是否是由本事务生成的，如果是，那可见，毕竟自己做的修改自己肯定是能看见的<br>再判断本条数据的事务id是否比最小活跃事务id要小，如果是，那可见，因为这说明这条数据是已经被其它事务提交的，本事务应该可见<br>再判断本条数据的事务id是否不在活跃事务id集合中，如果不在，那可见，因为这说明也是其它事务提交了的数据</p><p>如果本条数据对本事务不可见，就根据隐藏字段 + undo log计算出上一个版本的数据，然后继续判断，直到找到某条对本事务可见的数据</p><h3 id="RC-和-RR-隔离级别下-MVCC-的差异"><a href="#rc-%E5%92%8C-rr-%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8B-mvcc-%E7%9A%84%E5%B7%AE%E5%BC%82">RC 和 RR 隔离级别下 MVCC 的差异</a></h3><p>在事务隔离级别 <code>RC</code> 和 <code>RR</code> （InnoDB 存储引擎的默认事务隔离级别）下，<code>InnoDB</code> 存储引擎使用 <code>MVCC</code>（非锁定一致性读），但它们生成 <code>Read View</code> 的时机却不同</p><ul><li>在 RC 隔离级别下的 <strong><code>每次select</code></strong> 查询前都生成一个<code>Read View</code> (m_ids 列表)</li><li>在 RR 隔离级别下只在事务开始后 <strong><code>第一次select</code></strong> 数据前生成一个<code>Read View</code>（m_ids 列表）</li></ul><h2 id="MVCC➕Next-key-Lock-防止幻读"><a href="#mvcc%E2%9E%95next-key-lock-%E9%98%B2%E6%AD%A2%E5%B9%BB%E8%AF%BB">MVCC➕Next-key-Lock 防止幻读</a></h2><p><img src="/img/covers/image-20251116012419555.png" alt="image-20251116012419555"></p><p><code>InnoDB</code>存储引擎在 RR 级别下通过 <code>MVCC</code>和 <code>Next-key Lock</code> 来解决幻读问题：</p><p><strong>1、执行普通 <code>select</code>，此时会以 <code>MVCC</code> 快照读的方式读取数据</strong></p><p>在快照读的情况下，RR 隔离级别只会在事务开启后的第一次查询生成 <code>Read View</code> ，并使用至事务提交。所以在生成 <code>Read View</code> 之后其它事务所做的更新、插入记录版本对当前事务并不可见，实现了可重复读和防止快照读下的 “幻读”</p><p><strong>2、执行 select…for update/lock in share mode、insert、update、delete 等当前读</strong></p><p>在当前读下，读取的都是最新的数据，如果其它事务有插入新的记录，并且刚好在当前事务查询范围内，就会产生幻读！<code>InnoDB</code> 使用 <a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-locking.html#innodb-next-key-locks">Next-key Lock</a> 来防止这种情况。当执行当前读时，会锁定读取到的记录的同时，锁定它们的间隙，防止其它事务在查询范围内插入数据。只要我不让你插入，就不会发生幻读</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+            <tag> 事务 </tag>
+            
+            <tag> MVCC </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>SpringMVC执行流程</title>
+      <link href="/2025/12/25/SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B/"/>
+      <url>/2025/12/25/SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B/</url>
+      
+        <content type="html"><![CDATA[<h1>SpringMVC执行流程</h1><p>请求先到 <strong>DispatcherServlet（前端控制器）</strong>，它负责调度 <strong>HandlerMapping → HandlerAdapter → Controller → ViewResolver → View</strong>。</p><p>Spring MVC 采用前端控制器模式，所有请求先进入 DispatcherServlet。DispatcherServlet 通过 HandlerMapping 找到对应的 Controller，再通过 HandlerAdapter 调用方法执行。Controller 返回结果后，如果是视图名则交给 ViewResolver 解析并渲染视图；如果是 @ResponseBody，则通过 HttpMessageConverter 转换为 JSON 返回给客户端。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Spring </tag>
+            
+            <tag> SpringMVC </tag>
+            
+            <tag> 执行流程 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>MySqL事务特性，隔离级别</title>
+      <link href="/2025/12/24/MySqL%E4%BA%8B%E5%8A%A1%E7%89%B9%E6%80%A7%EF%BC%8C%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/"/>
+      <url>/2025/12/24/MySqL%E4%BA%8B%E5%8A%A1%E7%89%B9%E6%80%A7%EF%BC%8C%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/</url>
+      
+        <content type="html"><![CDATA[<h3 id="MySqL事务隔离级别"><strong>MySqL事务隔离级别</strong></h3><p>事务的特性：</p><p>原子性：<strong>事务要么全部提交成功要么全部失败</strong></p><p>一致性：<strong>事务操作前和操作后具有完整性约束，数据库保持一致性状态</strong></p><p>隔离性：<strong>事务执行时相互隔离互不影响，可以防止多个事务并发执行由于交叉执行导致的不一致</strong></p><p>持久性：<strong>事务操作结束后修改是永久性的，即使关机故障也不会消失</strong></p><h3 id="MySQL-InnoDB-引擎通过什么技术来保证事务的这四个特性的呢？"><strong>MySQL InnoDB 引擎通过什么技术来保证事务的这四个特性的呢？</strong></h3><ul><li>持久性是通过 redo log （重做日志）来保证的；</li><li>原子性是通过 undo log（回滚日志） 来保证的；</li><li>隔离性是通过 MVCC（多版本并发控制） 或锁机制来保证的；</li><li>一致性则是通过持久性+原子性+隔离性来保证；</li></ul><h3 id="事务的隔离级别有哪些？">事务的隔离级别有哪些？</h3><h5 id="读未提交"><strong>读未提交</strong></h5><p>​最低的隔离级别， 会导致脏读、幻读或不可重复读。</p><h5 id="读已提交"><strong>读已提交</strong></h5><p>​允许读取并发事务已经提交的数据，可以阻止脏读，但是幻读或不可重复读仍有可能发生。这是大多数数据库（如 Oracle, SQL Server）的默认隔离级别。</p><h5 id="可重复读"><strong>可重复读</strong></h5><p>​对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，可以阻止脏读和不可重复读，但幻读仍有可能发生。并且，InnoDB 在此级别下通过 MVCC（多版本并发控制） 和 Next-Key Locks（间隙锁+行锁） 机制，在很大程度上解决了幻读问题。</p><p><strong>RR隔离级别甚至连部分情况的可重复读也没解决：事务A先快照读查到数据a=10，事务B更新a=15并提交，事务A再当前读数据，读出来是a=15，两次前后读取不一样。</strong></p><p>当前读一定读取“最新已提交版本（Latest Committed Version）”，而不是事务开始时的快照。</p><p><strong>可串行化</strong></p><p>​最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，这样事务之间就完全不可能产生干扰，也就是说，该级别可以防止脏读、不可重复读以及幻读。</p><h3 id="事务执行可能出现的问题">事务执行可能出现的问题</h3><p>脏读 ：<strong>当一个事务读到另一个没有提交事务修改过的数据，此时就发生脏读了。通过读已提交可以避免</strong></p><p>不可重复读 ： <strong>在一个事务内多次读取同一个数据，如果出现前后两次读到的数据不一样的情况，就意味着发生了「不可重复读」现象。</strong></p><p>幻读 : <strong>在一个事务内多次查询某个符合查询条件的「记录数量」，如果出现前后两次查询到的记录数量不一样的情况，就意味着发生了「幻读」现象。</strong></p><p><img src="/img/covers/image-20251224220314987.png" alt="image-20251224220314987"></p><p><img src="/img/covers/image-20251224221935836.png" alt="image-20251224221935836"></p><p>RR 隔离级别下如果第一次是快照读、第二次是当前读，确实可能读到不同的值；但严格来说，这并不属于不可重复读，因为比较的是两种不同的读语义。不可重复读只讨论同一种读方式。<br>在 RC 隔离级别下，虽然普通快照读无法避免不可重复读，但如果显式使用当前读并加锁，同样可以通过锁机制避免前后读取不一致。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+            <tag> 事务 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Redis的ziplist到ListPack</title>
+      <link href="/2025/12/21/Redis%E7%9A%84ziplist%E5%88%B0ListPack/"/>
+      <url>/2025/12/21/Redis%E7%9A%84ziplist%E5%88%B0ListPack/</url>
+      
+        <content type="html"><![CDATA[<h2 id="Redis的压缩列表ziplist到紧凑列表listpack">Redis的压缩列表ziplist到紧凑列表listpack</h2><h3 id="ziplist-的结构（老版本用的）">ziplist 的结构（老版本用的）</h3><p>大概长这样：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[zlbytes][zltail][zllen][entry1][entry2]...[entryN][0xFF]</span><br><span class="line">● *zlbytes*，记录整个压缩列表占用对内存字节数；</span><br><span class="line">● *zltail*，记录压缩列表「尾部」节点距离起始地址由多少字节，也就是列表尾的偏移量；</span><br><span class="line">● *zllen*，记录压缩列表包含的节点数量；</span><br><span class="line">● *0xFF*，标记压缩列表的结束点，固定值 0xFF（十进制255）。</span><br></pre></td></tr></table></figure><p>每个 <code>entry</code> 里：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[prevlen][encoding][data]</span><br></pre></td></tr></table></figure><ul><li><code>prevlen</code>：前一个 entry 的长度（1 或 5 字节）</li><li><code>encoding</code>：当前 entry 是字符串还是整数，长度是多少</li><li><code>data</code>：真正的数据</li></ul><h3 id="listpack-的结构（新版本用的）">listpack 的结构（新版本用的）</h3><p>大概长这样：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[total_bytes][count][entry1][entry2]...[entryN][0xFF]</span><br><span class="line">total_bytes：整个 listpack 的总字节数</span><br><span class="line">count：entry 的个数（元素数量）</span><br><span class="line">● *0xFF*，标记压缩列表的结束点，固定值 0xFF（十进制255）。</span><br></pre></td></tr></table></figure><p>每个 <code>entry</code> 里：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[encoding+len][data][backlen]</span><br><span class="line">[encoding+len]：</span><br><span class="line">1.数据类型（string/int…）</span><br><span class="line">2.字符串长度（完整长度信息）</span><br><span class="line">3.如果长度太长，encoding 会表示“后面几个字节继续存长度”</span><br><span class="line">backlen ：当前整个 entry 的总字节数</span><br></pre></td></tr></table></figure><p>注意两点变化：</p><ol><li><strong>没有 prevlen 了</strong>（不再依赖“记录前一个元素长度”来反向遍历）</li><li>多了 <strong>backlen</strong>（记录自己的完整长度，用来从后往前遍历）</li></ol><p>这是 ziplist 被吐槽最多的一个点：<strong>级联更新（cascading update）</strong>。</p><h2 id="1-ziplist-的问题">1.ziplist 的问题</h2><ul><li>每个 entry 前面有个 <code>prevlen</code> 字段，记录 <em>前一个 entry 的长度</em></li><li><code>prevlen</code> 自身可能是 <strong>1 字节</strong> 或 <strong>5 字节</strong><ul><li>如果前一个 entry 变大了，从 253 → 300 字节</li><li>起初 <code>prevlen</code> = 1 字节，现在需要 5 字节</li></ul></li><li>那么：<ul><li>当前 entry 要扩展 4 字节</li><li>它变长后，下一个 entry 的 <code>prevlen</code> 又可能从 1 → 5</li><li>如此继续……导致<strong>后面一串 entry 都要重写、搬移内存</strong></li></ul></li></ul><p>结果就是：<strong>某个元素变长，可能触发 O(N) 的连锁内存搬移</strong>，列表越大越惨，而且实现特别绕，也容易出 bug。</p><h2 id="2-listpack-如何改进？">2.listpack 如何改进？</h2><ul><li>listpack 不再在每个元素开头放 <code>prevlen</code></li><li>改为在 <strong>元素末尾</strong> 放一个 <code>backlen</code>，记录<strong>这个元素自己的长度</strong></li><li>反向遍历时：<ul><li>从尾开始，先读 backlen → 退回去这么多字节 → 得到前一个元素起始位置</li></ul></li></ul><p>这样改的一个好处是：</p><ul><li>你修改某个元素的长度时，只需要考虑它<strong>自己的 backlen</strong></li><li>不会像 ziplist 那样，影响后面每一个元素的 <code>prevlen</code> 字段</li></ul><p>虽然单个元素变长还是需要移动后面的内存，但<strong>不会再产生那种“级联字段变化”的连环改动</strong>，整体逻辑简单且更可控。</p><hr><h2 id="3-存储编码更紧凑，节省内存">3. 存储编码更紧凑，节省内存</h2><p>listpack 是在 ziplist 的经验基础上重新设计的，目标就是：</p><blockquote><p><strong>“既要省内存，又要减少复杂边界情况”</strong></p></blockquote><p>主要变化：</p><ol><li><strong>编码种类更合理</strong><ul><li>对整数、短字符串等使用多种变长编码方案</li><li>比 ziplist 更灵活、更紧凑</li></ul></li><li><strong>去掉多余的头部字段</strong><ul><li>ziplist 有 <code>zltail</code> 等字段</li><li>listpack 头部只保留对操作真正有用的字段（总字节数、元素数），结构更轻量</li></ul></li><li><strong>统一整数/字符串编码格式</strong><ul><li>在不同模块（hash、zset、list）里都可以复用 listpack</li><li>更利于代码维护和优化</li></ul></li></ol><p>总体效果：<strong>在很多实际场景中，listpack 比 ziplist 更省内存，尤其是大量小元素时</strong>。</p><hr><h2 id="4-性能与安全性方面的改进">4. 性能与安全性方面的改进</h2><h3 id="①-性能">① 性能</h3><ul><li>减少了级联更新的问题，尤其是<strong>修改中间元素时</strong>更稳定</li><li>更简单的编码与解析逻辑，有利于编译器优化、CPU cache 命中</li></ul><h3 id="②-安全性">② 安全性</h3><p>ziplist 曾经出过多次 <strong>整数溢出 / 越界</strong> 的安全漏洞（CVE），原因之一就是：</p><ul><li>设计偏复杂，各种长度字段 + 级联更新</li><li>很难做到所有边界都不出错</li></ul><p>listpack 从设计上就尽量：</p><ul><li>简化字段</li><li>减少依赖“前一个元素长度”的逻辑</li><li>更好地检查长度合法性</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 数据结构 </tag>
+            
+            <tag> Redis </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>HotSpot 垃圾收集器</title>
+      <link href="/2025/12/19/HotSpot%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"/>
+      <url>/2025/12/19/HotSpot%20%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</url>
+      
+        <content type="html"><![CDATA[<h1>HotSpot 垃圾收集器</h1><p>HotSpot 虚拟机提供了多种垃圾收集器，每种收集器都有各自的特点，虽然我们要对各个收集器进行比较，但并非为了挑选出一个最好的收集器。我们选择的只是对具体应用最合适的收集器。</p><h2 id="新生代垃圾收集器">新生代垃圾收集器</h2><h3 id="Serial-垃圾收集器（单线程）">Serial 垃圾收集器（单线程）</h3><p>只开启<strong>一条</strong> GC 线程进行垃圾回收，并且在垃圾收集过程中停止一切用户线程，即 Stop The World。</p><p>一般客户端应用所需内存较小，不会创建太多对象，而且堆内存不大，因此垃圾收集器回收时间短，即使在这段时间停止一切用户线程，也不会感觉明显卡顿。因此 Serial 垃圾收集器<strong>适合客户端</strong>使用。</p><p>由于 Serial 收集器只使用一条 GC 线程，避免了线程切换的开销，从而简单高效。</p><p><img src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/jvm@main/images/serial.png" alt="Serial"></p><h3 id="ParNew-垃圾收集器（多线程）">ParNew 垃圾收集器（多线程）</h3><p>ParNew 是 Serial 的多线程版本。由多条 GC 线程并行地进行垃圾清理。但清理过程依然需要 Stop The World。</p><p>ParNew 追求“<strong>低停顿时间</strong>”,与 Serial 唯一区别就是使用了多线程进行垃圾收集，在多 CPU 环境下性能比 Serial 会有一定程度的提升；但<strong>线程切换需要额外的开销</strong>，因此在单 CPU 环境中表现不如 Serial。</p><p><img src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/jvm@main/images/parnew.png" alt="ParNew"></p><h3 id="Parallel-Scavenge-垃圾收集器（多线程）">Parallel Scavenge 垃圾收集器（多线程）</h3><p>Parallel Scavenge 和 ParNew 一样，都是多线程、新生代垃圾收集器。但是两者有巨大的不同点：</p><ul><li>Parallel Scavenge：追求 CPU 吞吐量，能够在较短时间内完成指定任务，因此适合没有交互的后台计算。</li><li>ParNew：追求降低用户停顿时间，适合交互式应用。</li></ul><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">吞吐量 = 运行用户代码时间 / (运行用户代码时间 + 垃圾收集时间)</span><br></pre></td></tr></table></figure><p>追求高吞吐量，可以通过减少 GC 执行实际工作的时间，然而，仅仅偶尔运行 GC 意味着每当 GC 运行时将有许多工作要做，因为在此期间积累在堆中的对象数量很高。单个 GC 需要花更多的时间来完成，从而导致更高的暂停时间。而考虑到低暂停时间，最好频繁运行 GC 以便更快速完成，反过来又导致吞吐量下降。</p><ul><li>通过参数 -XX:GCTimeRadio 设置垃圾回收时间占总 CPU 时间的百分比。</li><li>通过参数 -XX:MaxGCPauseMillis 设置垃圾处理过程最久停顿时间。</li><li>通过命令 -XX:+UseAdaptiveSizePolicy 开启自适应策略。我们只要设置好堆的大小和 MaxGCPauseMillis 或 GCTimeRadio，收集器会自动调整新生代的大小、Eden 和 Survivor 的比例、对象进入老年代的年龄，以最大程度上接近我们设置的 MaxGCPauseMillis 或 GCTimeRadio。</li></ul><h2 id="老年代垃圾收集器">老年代垃圾收集器</h2><h3 id="Serial-Old-垃圾收集器（单线程）">Serial Old 垃圾收集器（单线程）</h3><p>Serial Old 收集器是 Serial 的老年代版本，都是单线程收集器，只启用一条 GC 线程，都适合客户端应用。它们唯一的区别就是：Serial Old 工作在老年代，使用“标记-整理”算法；Serial 工作在新生代，使用“复制”算法。</p><h3 id="Parallel-Old-垃圾收集器（多线程）">Parallel Old 垃圾收集器（多线程）</h3><p>Parallel Old 收集器是 Parallel Scavenge 的老年代版本，追求 CPU 吞吐量。</p><h3 id="CMS-垃圾收集器">CMS 垃圾收集器</h3><p>CMS（Concurrent Mark Sweep，并发标记清除）收集器是以获取最短回收停顿时间为目标的收集器（追求低停顿），它在垃圾收集时使得用户线程和 GC 线程并发执行，因此在垃圾收集过程中用户也不会感到明显的卡顿。</p><ul><li>初始标记：Stop The World，仅使用一条初始标记线程对所有与 GC Roots 直接关联的对象进行标记。</li><li>并发标记：使用<strong>多条</strong>标记线程，与用户线程并发执行。此过程进行可达性分析，标记出所有废弃对象。速度很慢。</li><li>重新标记：Stop The World，使用多条标记线程并发执行，将刚才并发标记过程中新出现的废弃对象标记出来。</li><li>并发清除：只使用一条 GC 线程，与用户线程并发执行，清除刚才标记的对象。这个过程非常耗时。</li></ul><p>并发标记与并发清除过程耗时最长，且可以与用户线程一起工作，因此，<strong>总体上说</strong>，CMS 收集器的内存回收过程是与用户线程<strong>一起并发执行</strong>的。</p><p><img src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/jvm@main/images/cms.png" alt="CMS"></p><p>CMS 的缺点：</p><ul><li>吞吐量低</li><li>无法处理浮动垃圾</li><li>使用“标记-清除”算法产生碎片空间，导致频繁 Full GC</li></ul><p>对于产生碎片空间的问题，可以通过开启 -XX:+UseCMSCompactAtFullCollection，在每次 Full GC 完成后都会进行一次内存压缩整理，将零散在各处的对象整理到一块。设置参数 -XX:CMSFullGCsBeforeCompaction 告诉 CMS，经过了 N 次 Full GC 之后再进行一次内存整理。</p><h2 id="G1-通用垃圾收集器">G1 通用垃圾收集器</h2><p>G1 是一款面向服务端应用的垃圾收集器，它没有新生代和老年代的概念，而是将堆划分为一块块独立的 Region。当要进行垃圾收集时，首先估计每个 Region 中垃圾的数量，每次都从垃圾回收价值最大的 Region 开始回收，因此可以获得最大的回收效率。</p><p>从整体上看， G1 是基于“标记-整理”算法实现的收集器，从局部（两个 Region 之间）上看是基于“复制”算法实现的，这意味着运行期间不会产生内存空间碎片。</p><p>这里抛个问题 👇</p><blockquote><p>一个对象和它内部所引用的对象可能不在同一个 Region 中，那么当垃圾回收时，是否需要扫描整个堆内存才能完整地进行一次可达性分析？</p></blockquote><p>并不！每个 Region 都有一个 Remembered Set，用于记录本区域中所有对象引用的对象所在的区域，进行可达性分析时，只要在 GC Roots 中再加上 Remembered Set 即可防止对整个堆内存进行遍历。</p><p>如果不计算维护 Remembered Set 的操作，G1 收集器的工作过程分为以下几个步骤：</p><ul><li>初始标记：Stop The World，仅使用一条初始标记线程对所有与 GC Roots 直接关联的对象进行标记。</li><li>并发标记：使用<strong>一条</strong>标记线程与用户线程并发执行。此过程进行可达性分析，速度很慢。</li><li>最终标记：Stop The World，使用多条标记线程并发执行。</li><li>筛选回收：回收废弃对象，此时也要 Stop The World，并使用多条筛选回收线程并发执行。</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Java </tag>
+            
+            <tag> JVM </tag>
+            
+            <tag> 垃圾收集 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>AIO BIO NIO区别？</title>
+      <link href="/2025/12/17/AIO%20BIO%20NIO%E5%8C%BA%E5%88%AB%EF%BC%9F/"/>
+      <url>/2025/12/17/AIO%20BIO%20NIO%E5%8C%BA%E5%88%AB%EF%BC%9F/</url>
+      
+        <content type="html"><![CDATA[<h1>AIO BIO NIO区别？</h1><h3 id="BIO（同步阻塞-I-O）"><strong>BIO（同步阻塞 I/O）</strong></h3><p>BIO 是传统的 I/O 模式，全称为 <strong>Block I/O</strong>，也叫同步阻塞 I/O。在 BIO 模式下，当我们执行 I/O 操作时，比如读取文件或者网络请求，程序会 <strong>阻塞</strong>，直到 I/O 操作完成后，才能继续执行后面的代码。也就是说，当一个线程在等待 I/O 完成时，它是处于<strong>阻塞状态</strong>的，不能做其他事情。</p><h3 id="NIO（同步非阻塞-I-O）"><strong>NIO（同步非阻塞 I/O）</strong></h3><p><strong>一个线程管理多个连接</strong></p><p>NIO 是对传统 BIO 的改进，它全称是 <strong>Non-blocking I/O</strong>（非阻塞 I/O）。在 NIO 模式下，I/O 操作不是阻塞的，可以同时处理多个 I/O 请求。与 BIO 不同的是，NIO 使用了 <strong><a href="https://zhida.zhihu.com/search?content_id=252965872&amp;content_type=Article&amp;match_order=1&amp;q=Channel&amp;zhida_source=entity">Channel</a>（通道）</strong> 和 <strong><a href="https://zhida.zhihu.com/search?content_id=252965872&amp;content_type=Article&amp;match_order=1&amp;q=Buffer&amp;zhida_source=entity">Buffer</a>（缓冲区）</strong> 来进行数据读写，并且它支持 <strong>多路复用</strong>，这意味着多个 I/O 操作可以共享一个线程来处理，从而大大提高了并发性能。</p><h3 id="AIO（异步非阻塞-I-O）"><strong>AIO（异步非阻塞 I/O）</strong></h3><p>AIO 是 NIO 的进一步升级，叫做 <strong>Asynchronous I/O</strong>（异步非阻塞 I/O）。在 AIO 模式下，I/O 操作是完全异步的，不需要线程阻塞等待 I/O 完成。AIO 基于事件和回调机制，当 I/O 操作完成时，系统会通知应用程序，程序就能接收到结果。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Java </tag>
+            
+            <tag> IO </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Redis网络模型</title>
+      <link href="/2025/12/17/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/"/>
+      <url>/2025/12/17/Redis%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/</url>
+      
+        <content type="html"><![CDATA[<h1>Redis网络模型（io多路复用）</h1><p><strong>阻塞IO(Blocking IO)</strong></p><p>假设服务端只开启一个线程处理请求，第一个请求到来，开始调用内核read函数，然后就会发生阻塞，第二个请求到来时服务端将无法处理，只能等第一个请求读取完成。这种方式的缺点很明显，每次只能处理一个请求，无法发挥cpu多核优势，性能低下。</p><p>为了解决这个问题，我们可以引入多线程，这样就可以同时处理多个请求了，但服务端可能同时有成千上万的请求需要处理，随之而来的是线程数膨胀，频繁创建、销毁线程带来的性能影响，当然我们可以使用线程池，但服务能处理的总体数量就会受限于线程池线程数量。</p><p><strong>非阻塞IO(NON-Blocking IO)</strong></p><p>相比阻塞IO，非阻塞IO会立即返回，调用者不会阻塞，此时可以做一些其它事情，例如处理其它请求。但是非阻塞IO需要主动轮询是否有数据需要处理，且这种轮询需要从用户态切换到内核态这，假如没有数据产生就会有很多空轮询，白白浪费cpu资源。</p><p>阻塞IO、非阻塞IO，要么需要开启更多线程去处理IO，要么需要从用户态切换到内核态轮询IO事件，那么有没有一种机制，用户程序只需要将请求提交给内核，由内核用少量的线程去监听，有事件就通知用户程序呢？这就是IO多路复用。</p><h3 id="IO多路复用-IO-Multiplexing"><strong>IO多路复用(IO Multiplexing)</strong></h3><p><strong>IO多路复用机制是指一个线程处理多个IO流，多路是指网络连接，复用指的是同一个线程。</strong><br>如果简单从图上看IO多路复用相比阻塞IO似乎并没有什么高明之处，假设服务只处理少量的连接，那么相比阻塞IO确实没有太大的提升，但如果连接数非常多，差距就会立竿见影。<br>首先IO多路复用会提交一批需要监听的文件句柄（socket也是一种文件句柄）到内核，由内核开启一个线程负责监听，把轮询工作交给内核，当有事件发生时，由内核通知用户程序。这不需要用户程序开启更多的线程去处理连接，也不需要用户程序切换到内核态去轮询，用一个线程就能处理大量网络IO请求。<br>redis底层采用的就是IO多路复用模型，实际上基本所有中间件在处理网络IO这一块都会使用到IO多路复用，如kafka,rocketmq等，所以本次学习之后对其它中间件的理解也是很有帮助的。</p><h2 id="select-poll-epoll"><strong>select/poll/epoll</strong></h2><p>linux最开始提供的是select函数，方法如下：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select(int nfds, fd_set *r, fd_set *w, fd_set *e, struct timeval *timeout)</span><br></pre></td></tr></table></figure><p>该方法需要传递3个集合，r,e,w分别表示读、写、异常事件集合。集合类型是bitmap，通过0/1表示该位置的fd(文件描述符，socket也是其中一种)是否关心对应读、写、异常事件。例如我们对fd为1和2的读事件关心，r参数的第1,2个bit就设置为1。</p><p><strong>用户进程调用select函数将关心的事件传递给内核系统，然后就会阻塞，直到传递的事件至少有一个发生时，方法调用会返回。内核返回时，同样把发生的事件用这3个参数返回回来，如r参数第1个bit为1表示fd为1的发生读事件，第2个bit依然为0，表示fd为2的没有发生读事件。用户进程调用时传递关心的事件，内核返回时返回发生的事件。</strong></p><p>select存在的问题：</p><ol><li>大小有限制。为1024，由于每次select函数调用都需要在用户空间和内核空间传递这些参数，为了提升拷贝效率，linux限制最大为1024。</li><li>这3个集合有相应事件触发时，会被内核修改，所以每次调用select方法都需要重新设置这3个集合的内容。</li><li>当有事件触发select方法返回，需要遍历集合才能找到就绪的文件描述符，例如传1024个读事件，只有一个读事件发生，需要遍历1024个才能找到这一个。</li><li>同样在内核级别，每次需要遍历集合查看有哪些事件发生，效率低下。</li></ol><p>poll函数对select函数做了一些改进</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">poll(struct pollfd *fds, int nfds, int timeout)</span><br><span class="line"></span><br><span class="line">struct pollfd &#123;</span><br><span class="line">int fd;</span><br><span class="line">short events;</span><br><span class="line">short revents;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>poll函数需要传一个pollfd结构数组，其中fd表示文件描述符，events表示关心的事件，revents表示发生的事件，当有事件发生时，内核通过这个参数返回回来。</p><p>poll相比select的改进：</p><ol><li>传不固定大小的数组，没有1024的限制了（问题1）</li><li>将关心的事件和实际发生的事件分开，不需要每次都重新设置参数（问题2）。例如poll数组传1024个fd和事件，实际只有一个事件发生，那么只需要重置一下这个fd的revent即可，而select需要重置1024个bit。</li></ol><p>poll没有解决select的问题3和4。另外，虽然poll没有1024个大小的限制，但每次依然需要在用户和内核空间传输这些内容，数量大时效率依然较低。</p><p>这几个问题的根本实际很简单，核心问题是select/poll方法对于内核来说是无状态的，内核不会保存用户调用传递的数据，所以每次都是全量在用户和内核空间来回拷贝，如果调用时传给内核就保存起来，有新增文件描述符需要关注就再次调用增量添加，有事件触发时就只返回对应的文件描述符，那么问题就迎刃而解了，这就是epoll做的事情。</p><p>epoll对应3个方法</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int epoll_create(int size);</span><br><span class="line">int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);</span><br><span class="line">int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);</span><br></pre></td></tr></table></figure><p>epoll_create负责创建一个上下文，用于存储数据，底层是用红黑树，以后的操作就都在这个上下文上进行。<br>epoll_ctl负责将文件描述和所关心的事件注册到上下文。<br>epoll_wait用于等待事件的发生，当有有事件触发，就只返回对应的文件描述符了。</p><p>select 底层是位图数组，限制就是会被数组长度限制，只有1024大小，内核轮询这个事件是否就绪，如果有的话内核态会把用户态的参数拷进内核空间然后检测每个的状态，select() 返回时，内核会把修改后的 fd_set（就绪标记）拷回用户空间，这样子的开销是比较大的，每次都需要扫描，拷贝。</p><p>poll底层的话是个链表，他的话解决了select的大小限制问题，但是还是没有解决用户态与内核态之间的问题</p><p>epoll的话他底层是个红黑树，他有三个函数，creat，ctl，wait，他的改进是用户在修改的时候，内核会把信息拷入内核数据结构，当内核返回就绪事件时候，epoll_wait会把准备好的事件批量拷贝到用户提供的缓冲区</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Redis </tag>
+            
+            <tag> 网络模型 </tag>
+            
+            <tag> IO多路复用 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>ConcurrentHashMap底层原理</title>
+      <link href="/2025/11/28/ConcurrentHashMap%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86/"/>
+      <url>/2025/11/28/ConcurrentHashMap%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86/</url>
+      
+        <content type="html"><![CDATA[<h1>ConcurrentHashMap底层原理</h1><p>jdk1.7是数组加链表，它在对象中保存了一个<strong>Segment数组</strong>。每个Segment元素类似于一个Hashtable；这样，在执行put操作时首先根据hash算法定位到元素属于哪个Segment，然后对该Segment加锁即可，不同的Segment可以并发put。而Segment的锁实现其实是ReentrantLock</p><p>jdk1.8则是采用了数组+链表/红黑树，他舍弃了Segment数组，用的是CAS + synchronized</p><p>1.7put流程：</p><p>为输入的Key做Hash运算，得到hash</p><p>通过hash，定位到对应的Segment对象（根据hash值的高4位（根据Segment数量决定是高几位，如果是32个Segment，就是高5位），找到对应Segment）<br>获取可重入锁<br>再次通过hash值，定位到Segment当中数组的具体位置<br>插入或覆盖HashEntry对象<br>释放锁</p><p>1.7get流程：</p><p>为输入的key做Hash运算，得到hash<br>通过hash，定位到对应的Segment对象<br>再次通过hash，定位到Segment当中数组的具体位置</p><p>为什么get不需要上锁？因为使用了大量的volatile（Node中的val和next是volatile）</p><hr><p>1.8put流程</p><p>检验key和value不能为null<br>进入死循环<br>如果第一次添加元素，初始化table，使用CAS保证线程安全，然后重新进入循环<br>如果头节点为null，CAS将自己设置为头节点，成功则break，失败则重新进入循环<br>如果头节点是ForwardingNode，说明这个桶正在进行扩容，则帮忙进行扩容，然后重新进入循环<br>到了这里说明需要往桶下标的非头节点中添加元素，此时使用synchronized，锁对象是头节点<br>再次确认链表头节点有没有被移动<br>如果是链表，走链表put操作，如果有相同的key则更新，否则添加<br>如果是红黑树，走红黑树put操作，如果有相同的key则更新，否则添加<br>释放锁，判断是否需要树化，然后break<br>使用累加单元数组进行size累加，判断是否需要扩容</p><p><img src="/img/covers/image-20251126164915387.png" alt="image-20251126164915387"></p><p>1.8get流程：无锁获取，因为Node[]和Node中的val和next有volatile</p><hr><p>扩容</p><p>第一部分是构建一个 nextTable，它的容量是原来的两倍，这个操作是单线程完成的。</p><p>第二个部分是将原来 table 中的元素复制到 nextTable 中，主要是遍历复制的过程。遍历是<strong>从后往前</strong>遍历原table<br>得到当前遍历的数组位置 i，然后利用 tabAt 方法获得 i 位置的元素：</p><p>如果这个位置为空，就在原 table 中的 i 位置放入 forwardNode 节点，这个也是触发并发扩容的关键；</p><p>如果这个位置是 Node 节点（fh&gt;=0），并且是链表的头节点，就把这个链表分裂成两个链表，把它们分别放在 nextTable 的 i 和 i+n 的位置上（桶下标不变的留在原地，变的放到 i + n 处）；处理完后头节点变成forwardNode（如果是链表，则复制值创建新节点对象扩容，如果是一个节点，则挪动元素扩容）</p><p>如果这个位置是 TreeBin 节点（fh&lt;0），也做一个反序处理，并且判断是否需要 untreefi，把处理的结果分别放在 nextTable 的 i 和 i+n 的位置上；处理完后头节点变成forwardNode</p><p>遍历所有的节点，就完成复制工作，这时让 nextTable 作为新的 table，并且更新 sizeCtl 为新容量的 0.75 倍 ，完成扩容。</p><p><strong>扩容会把正在扩容的头结点设置成一个特殊结点，然后从get，put的角度说</strong></p><p>扩容时有其余线程来get：如果头节点是forwardNode，那么就去新table中get，否则，在原table中查询，又因为迁移链表时是深拷贝扩容，所以get能查找到对应元素，不会出现并发问题</p><p>扩容时有其余线程来put：<br>如果要put的桶下标还不在扩容中，直接put<br>如果put的桶下标正在扩容中，只能阻塞<br>如果put的桶下标是forwarding，此时不能往新table中put，因为此时新table还没扩容完成，put可能产生并发问题，此时会去协助扩容</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Java </tag>
+            
+            <tag> 集合 </tag>
+            
+            <tag> 并发 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>CMS垃圾收集过程</title>
+      <link href="/2025/11/27/CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E8%BF%87%E7%A8%8B/"/>
+      <url>/2025/11/27/CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E8%BF%87%E7%A8%8B/</url>
+      
+        <content type="html"><![CDATA[<h3 id="能详细说一下-CMS-的垃圾收集过程吗？">能详细说一下 CMS 的垃圾收集过程吗？</h3><p><img src="https://cdn.tobebetterjavaer.com/tobebetterjavaer/images/sidebar/sanfene/jvm-34.png" alt="三分恶面渣逆袭：Concurrent Mark Sweep收集器运行示意图">三分恶面渣逆袭：Concurrent Mark Sweep收集器运行示意图</p><p>CMS 使用<strong>标记-清除</strong>算法进行垃圾收集，分 4 大步：</p><ul><li><strong>初始标记</strong>：标记所有从 GC Roots 直接可达的对象，这个阶段需要 STW，但速度很快。</li><li><strong>并发标记</strong>：从初始标记的对象出发，遍历所有对象，标记所有可达的对象。这个阶段是并发进行的。</li><li><strong>重新标记</strong>：完成剩余的标记工作，包括处理并发阶段遗留下来的少量变动，这个阶段通常需要短暂的 STW 停顿。</li><li><strong>并发清除</strong>：清除未被标记的对象，回收它们占用的内存空间。</li></ul><h4 id="你提到了remark，那它remark具体是怎么执行的？三色标记法？">你提到了remark，那它remark具体是怎么执行的？三色标记法？</h4><p>是的，remark 阶段通常会结合三色标记法来执行，确保在并发标记期间所有存活对象都被正确标记。目的是修正并发标记阶段中可能遗漏的对象引用变化。</p><p>在 remark 阶段，垃圾收集器会停止应用线程，以确保在这个阶段不会有引用关系的进一步变化。这种暂停通常很短暂。remark 阶段主要包括以下操作：</p><ol><li>处理写屏障记录的引用变化：在并发标记阶段，应用程序可能会更新对象的引用（比如一个黑色对象新增了对一个白色对象的引用），这些变化通过写屏障记录下来。在 remark 阶段，GC 会处理这些记录，确保所有可达对象都正确地标记为灰色或黑色。</li><li>扫描灰色对象：再次遍历灰色对象，处理它们的所有引用，确保引用的对象正确标记为灰色或黑色。</li><li>清理：确保所有引用关系正确处理后，灰色对象标记为黑色，白色对象保持不变。这一步完成后，所有存活对象都应当是黑色的。</li></ol><h4 id="什么是三色标记法？">什么是三色标记法？</h4><p><img src="https://cdn.tobebetterjavaer.com/stutymore/jvm-20240816132235.png" alt="Java全栈架构师：三色标记法">Java全栈架构师：三色标记法</p><p>三色标记法用于标记对象的存活状态，它将对象分为三类：</p><ol><li>白色（White）：尚未访问的对象。垃圾回收结束后，仍然为白色的对象会被认为是不可达的对象，可以回收。</li><li>灰色（Gray）：已经访问到但未标记完其引用的对象。灰色对象是需要进一步处理的。</li><li>黑色（Black）：已经访问到并且其所有引用对象都已经标记过。黑色对象是完全处理过的，不需要再处理。</li></ol><p>三色标记法的工作流程：</p><p>①、初始标记（Initial Marking）：从 GC Roots 开始，标记所有直接可达的对象为灰色。</p><p>②、并发标记（Concurrent Marking）：在此阶段，标记所有灰色对象引用的对象为灰色，然后将灰色对象自身标记为黑色。这个过程是并发的，和应用线程同时进行。</p><p>此阶段的一个问题是，应用线程可能在并发标记期间修改对象的引用关系，导致一些对象的标记状态不准确。</p><p>③、重新标记（Remarking）：重新标记阶段的目标是处理并发标记阶段遗漏的引用变化。为了确保所有存活对象都被正确标记，remark 需要在 STW 暂停期间执行。</p><p>④、使用写屏障（Write Barrier）来捕捉并发标记阶段应用线程对对象引用的更新。通过遍历这些更新的引用来修正标记状态，确保遗漏的对象不会被错误地回收。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Java </tag>
+            
+            <tag> JVM </tag>
+            
+            <tag> 垃圾收集 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>SpringIOC</title>
+      <link href="/2025/11/24/SpringIOC/"/>
+      <url>/2025/11/24/SpringIOC/</url>
+      
+        <content type="html"><![CDATA[<h3 id="什么是-IoC">什么是 IoC?</h3><p>IoC （Inversion of Control ）即控制反转/反转控制。它是一种思想不是一个技术实现。描述的是：Java 开发领域对象的创建以及管理的问题。</p><p>例如：现有类 A 依赖于类 B</p><ul><li><strong>传统的开发方式</strong> ：往往是在类 A 中手动通过 new 关键字来 new 一个 B 的对象出来</li><li><strong>使用 IoC 思想的开发方式</strong> ：不通过 new 关键字来创建对象，而是通过 IoC 容器(Spring 框架) 来帮助我们实例化对象。我们需要哪个对象，直接从 IoC 容器里面去取即可。</li></ul><p>从以上两种开发方式的对比来看：我们 “丧失了一个权力” (创建、管理对象的权力)，从而也得到了一个好处（不用再考虑对象的创建、管理等一系列的事情）</p><p><strong>为什么叫控制反转?</strong></p><ul><li><strong>控制</strong> ：指的是对象创建（实例化、管理）的权力</li><li><strong>反转</strong> ：控制权交给外部环境（IoC 容器）</li></ul><h3 id="IoC-解决了什么问题">IoC 解决了什么问题?</h3><p>IoC 的思想就是两方之间不互相依赖，由第三方容器来管理相关资源。这样有什么好处呢？</p><ol><li>对象之间的耦合度或者说依赖程度降低；</li><li>资源变的容易管理；比如你用 Spring 容器提供的话很容易就可以实现一个单例</li></ol><h3 id="IOC和DI的区别？">IOC和DI的区别？</h3><p><strong>IoC（控制反转, Inversion of Control）</strong> 是一种设计思想/原则：把对象的控制权（创建、生命周期、依赖获取等）从应用程序代码中“反转”到框架或容器。也就是说：<strong>不是对象去主动创建或查找依赖，而由外部容器来负责提供（控制）这些依赖。</strong></p><p><strong>DI（依赖注入, Dependency Injection）</strong> 是实现 IoC 的<strong>一种具体技术/方式</strong>——把依赖（对象）“注入”到目标对象中。常见注入方式：构造器注入、Setter 注入、字段注入。</p><p>IoC 是设计思想，DI 是具体的实现方式；</p><p>IoC 是理论，DI 是实践；</p><h3 id="Bean-的生命周期">Bean 的生命周期</h3><p>第一个阶段是实例化。Spring 容器会根据 BeanDefinition，通过反射调用 Bean 的构造方法创建对象实例。如果有多个构造方法，Spring 会根据依赖注入的规则选择合适的构造方法。</p><p>第二阶段是属性赋值。这个阶段 Spring 会给 Bean 的属性赋值，包括通过 <code>@Autowired</code>、<code>@Resource</code> 这些注解注入的依赖对象，以及通过 <code>@Value</code> 注入的配置值。</p><p>第三阶段是初始化。这个阶段会依次执行：</p><ul><li><code>@PostConstruct</code> 标注的方法</li><li>InitializingBean 接口的 afterPropertiesSet 方法</li><li>通过 <code>@Bean</code> 的 initMethod 指定的初始化方法</li></ul><p>第四阶段是使用 Bean。比如我们的 Controller 调用 Service，Service 调用 DAO。</p><p>最后是销毁阶段。当容器关闭或者 Bean 被移除的时候，会依次执行：</p><ul><li><code>@PreDestroy</code> 标注的方法</li><li>DisposableBean 接口的 destroy 方法</li><li>通过 <code>@Bean</code> 的 destroyMethod 指定的销毁方法</li></ul><h3 id="项目启动时Spring的IoC会做什么？">项目启动时Spring的IoC会做什么？</h3><p>第一件事是扫描和注册 Bean。IoC 容器会根据我们的配置，比如 <code>@ComponentScan</code> 指定的包路径，去扫描所有标注了 <code>@Component</code>、<code>@Service</code>、<code>@Controller</code> 这些注解的类。然后把这些类的元信息包装成 BeanDefinition 对象，注册到容器的 BeanDefinitionRegistry 中。这个阶段只是收集信息，还没有真正创建对象。</p><p>第二件事是 Bean 的实例化和注入。这是最核心的过程，IoC 容器会按照依赖关系的顺序开始创建 Bean 实例。对于单例 Bean，容器会通过反射调用构造方法创建实例，然后进行属性注入，最后执行初始化回调方法。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Spring </tag>
+            
+            <tag> IOC </tag>
+            
+            <tag> DI </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>HashMap</title>
       <link href="/2025/11/23/HashMap/"/>
       <url>/2025/11/23/HashMap/</url>
       
-        <content type="html"><![CDATA[<h1>HashMap</h1><p>JDK 7 中 HashMap 的数据结构是<code>数组</code>+<code>链表</code>。</p><p>JDK 8 中 HashMap 的数据结构是<code>数组</code>+<code>链表</code>+<code>红黑树</code>。</p><p>​<strong>它在链表长度大于8且数组长度大于64时候会把链表转换成红黑树</strong></p><p>HashMap 的初始容量是 16，随着元素的不断添加，HashMap 就需要进行扩容，阈值是<code>capacity * loadFactor</code>，capacity 为容量，loadFactor 为负载因子，默认为 0.75。</p><p>扩容后的数组大小是原来的 2 倍，然后把原来的元素重新计算哈希值，放到新的数组中。</p><p>负载因子（load factor）是一个介于 0 和 1 之间的数值，用于衡量哈希表的填充程度。它表示哈希表中已存储的元素数量与哈希表容量之间的比例。</p><ul><li>负载因子过高（接近 1）会导致哈希冲突增加，影响查找、插入和删除操作的效率。</li><li>负载因子过低（接近 0）会浪费内存，因为哈希表中有大量未使用的空间。</li></ul><h3 id="HashMap-的put过程："><strong>HashMap 的put过程：</strong></h3><p>1.他会先对key计算扰动hash，通过key.hashCode() ^ (key.hashCode() &gt;&gt;&gt; 16)计算，这样的目的是为了高16位的熵混进去低16位，减少碰撞。</p><p>2.判断当前是不是第一次添加 是的话就创建一个默认长度16，负载因子0.75的数组。</p><p>3.开始计算数组下标index，通过前面计算的hash &amp; (n - 1)来确定位置 这里的n是2的次幂</p><p>4.然后获取当前数组中对应的数据</p><p>5.数组为空，底层会创建一个键值对对象，直接放进去就行了</p><p>6.不为空</p><p>​6.1.如果当前插入的键值对与数组的键值对哈希值一样，也就是插入的键值与插入后的键值一样就把调整当前元素指针，在后面进行替换操作</p><p>​6.1.已经是TreeNode，走红黑树的添加或更新逻辑</p><p>​6.2.是普通Node，走链表的添加或更新逻辑，如果达到树化条件，走树化逻辑</p><p>添加后、返回前检查容量是否达到扩容阈值，如果达到，进行扩容</p><p><img src="/img/covers/image-20251122172610739.png" alt="image-20251122172610739"> <img src="/img/covers/image-20251122175658934.png" alt="image-20251122175658934"></p><h3 id="为什么HashMap的容量是2的n次方">为什么HashMap的容量是2的n次方</h3><h4 id="1-用位运算-n-1-hash-快速代替取模-n">1.用位运算 <code>(n - 1) &amp; hash</code> 快速代替取模 <code>% n</code></h4><p>​在n为偶数时候 n - 1为奇数 （n - 1）&amp; hash等价于 hash % n 并且位运算比取模快得多</p><h4 id="2-保证哈希值在桶上的分布尽可能均匀，避免部分桶永远用不到">2.保证哈希值在桶上的分布尽可能均匀，避免部分桶永远用不到</h4><p>​2 幂次方刚好是偶数，偶数-1 是奇数，奇数的二进制最后一位是 1，也就保证了 <code>hash &amp;(length-1)</code> 的最后一位可能为 0，也可能为 1（取决于 hash 的值），这样可以保证哈希值的均匀分布。</p><h4 id="3-方便扩容时用-oldCap-这一位快速判断元素新位置（JDK1-8-的优化）">3.方便扩容时用 <code>oldCap</code> 这一位快速判断元素新位置（JDK1.8 的优化）</h4><p>桶里每个节点的新位置只和这一位有关：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// oldCap 一定是 2 的幂，比如 16(10000b)</span></span><br><span class="line"><span class="keyword">if</span> ((hash &amp; oldCap) == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 这位是 0：留在原来的 index</span></span><br><span class="line">    newIndex = oldIndex;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 这位是 1：去到 index + oldCap</span></span><br><span class="line">    newIndex = oldIndex + oldCap;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>​</p><p>​JDK 1.8 扩容时利用 <code>hash &amp; oldCap</code> 这位来判断元素是留在原索引还是移动到 <code>index + oldCap</code>，极大简化了 rehash 的过程，这个优化也依赖容量是 2 的幂。</p><h3 id="重写HashMap的equal和hashcode方法需要注意什么？">重写HashMap的equal和hashcode方法需要注意什么？</h3><ul><li>如果o1.equals(o2)，那么o1.hashCode() == o2.hashCode()总是为true的。</li><li>如果o1.hashCode() == o2.hashCode()，并不意味着o1.equals(o2)会为true。</li></ul><h2 id="HashMap-的扩容机制和扩容过程（JDK1-8）">HashMap 的扩容机制和扩容过程（JDK1.8）</h2><h4 id="1）何时扩容？">1）何时扩容？</h4><ul><li>有个阈值：<code>threshold = capacity * loadFactor</code><ul><li>默认：<code>capacity = 16</code>，<code>loadFactor = 0.75</code></li><li>所以初始 threshold = 12</li></ul></li><li>当 <code>size &gt; threshold</code> 时，进行扩容：<ul><li><strong>数组长度 ×2</strong>，比如 16 -&gt; 32。</li></ul></li></ul><h4 id="2）扩容过程（resize-）">2）扩容过程（<code>resize()</code>）</h4><ol><li>创建一个新数组 <code>newTable</code>，长度 = 原来 2 倍。</li><li>遍历旧数组每个桶：<ul><li>如果桶为空，跳过。</li><li>如果桶里只有一个节点，直接搬到新数组对应位置。</li><li>如果桶是红黑树，拆成两棵或调整后搬到新数组中。</li><li>如果桶是链表：<ul><li>JDK1.8 做了一个优化：<ul><li>利用 <code>e.hash &amp; oldCap</code> 的结果来判断节点在新数组中的位置：<ul><li>如果为 0：节点留在原位置 <code>index</code>。</li><li>如果为 1：节点去到 <code>index + oldCap</code>。</li></ul></li></ul></li><li>这样链表可以拆成两个链表，过程更快，也避免 1.7 里“倒序 + 死循环”的问题。</li></ul></li></ul></li></ol><p>扩容是最重的操作：<strong>需要重新分布所有元素</strong>，所以尽量别频繁扩容（比如一开始就知道大概数量，可以传一个合适的 initialCapacity）。</p><h2 id="HashMap-出现-Hash-冲突时怎么办？何时链表进化成红黑树？何时退化？">HashMap 出现 Hash 冲突时怎么办？何时链表进化成红黑树？何时退化？</h2><h4 id="1）hash-冲突的解决方式">1）hash 冲突的解决方式</h4><ul><li>HashMap 使用的是 <strong>“拉链法”</strong>：<ul><li>数组 + 链表/红黑树。</li><li>同一个桶上的多个元素通过 next 指针连成一条链，或组织成一棵红黑树。</li></ul></li></ul><h4 id="2）链表-红黑树（树化）的条件（JDK1-8）">2）链表 -&gt; 红黑树（树化）的条件（JDK1.8）</h4><ul><li>满足 <strong>两个条件</strong> 才会树化：</li></ul><ol><li>单个桶中的链表长度 ≥ <code>TREEIFY_THRESHOLD</code>（默认 8）。</li><li>整个 table 的长度 ≥ <code>MIN_TREEIFY_CAPACITY</code>（默认 64）。</li></ol><blockquote><p>不满足第二个条件时，会优先选择 <strong>扩容</strong> 而不是树化。</p></blockquote><p><strong>原因</strong>：</p><ul><li>如果表太小，说明整体碰撞重；这时扩容可以让数据分摊到更多桶里，比急着树化更划算。</li></ul><h4 id="3）红黑树-链表（退化）的条件">3）红黑树 -&gt; 链表（退化）的条件</h4><ul><li><p>当树中的节点个数 ≤ <code>UNTREEIFY_THRESHOLD</code>（默认 6）时，</p></li><li><p><strong>remove树节点时，如果root、root.left、root.right、root.left.left有一个为null（在移除之前检查），也会退化成链表</strong></p><p><img src="/img/covers/image-20251123013013969.png" alt="image-20251123013013969"></p></li></ul><h3 id="JDK8为什么改用尾插法？">JDK8为什么改用尾插法？</h3><p>JDK8引入了红黑树，那么就可以插入时顺便遍历一遍当前桶有多少元素，决定是否转为红黑树<br>避免多线程下扩容可能产生的死循环</p><h4 id="扩容的时候每个节点都要进行位运算吗？">扩容的时候每个节点都要进行位运算吗？</h4><p>不需要。HashMap 会通过 <code>(e.hash &amp; oldCap)</code> 来判断节点是否需要移动，0 的话保留原索引；1 才需要移动到新索引（原索引 + oldCap）。</p><p>这样就避免了 hashCode 的重新计算，大大提升了扩容的性能。</p><p>所以，哪怕有几十万条数据，可能只有一半的数据才需要移动到新位置。另外，位运算的计算速度非常快，因此，尽管扩容操作涉及到遍历整个哈希表并对每个节点进行判断，但这部分操作的计算成本是相对较低的。</p><h2 id="String的hashCode-如何设计的，为啥每次乘的是31">String的hashCode()如何设计的，为啥每次乘的是31</h2><p>字符串中的每个字符都可以表现为一个数字，称为Si，其中i的范围是0 ~ n - 1<br>散列公式为：S0 * 31 ^ (n - 1) + S1 * 31 ^ (n - 2) + S2 * 31 ^ (n -3) + …  + Sn-1 * 31 ^ (0)<br>31代入公式有较好的散列特性，并且31 * h可以被优化为 h &lt;&lt; 5 - h<br>但这算法时间复杂度o(n)</p><h2 id="哈希冲突解决方法">哈希冲突解决方法:</h2><p>拉链法:哈希冲突时，同一个哈希槽拉成一个链表，HashMap采用该方法开放寻址:寻找其他位置，这就保证了一个哈希槽最多存有一个元素线性探测:哈希冲突时，按顺序往后查找，直到找到第一个为空的槽位，ThreadLocalMap采用该方法二次探测:与线性探测类似，但有规律，比如每次步长是1，2，4，8，16。。。再哈希法:哈希冲突时，换个哈希函数再次哈希</p>]]></content>
+        <content type="html"><![CDATA[<h1>HashMap</h1><p>JDK 7 中 HashMap 的数据结构是<code>数组</code>+<code>链表</code>。</p><p>JDK 8 中 HashMap 的数据结构是<code>数组</code>+<code>链表</code>+<code>红黑树</code>。</p><p>​<strong>它在链表长度大于8且数组长度大于64时候会把链表转换成红黑树</strong></p><p>HashMap 的初始容量是 16，随着元素的不断添加，HashMap 就需要进行扩容，阈值是<code>capacity * loadFactor</code>，capacity 为容量，loadFactor 为负载因子，默认为 0.75。</p><p>扩容后的数组大小是原来的 2 倍，然后把原来的元素重新计算哈希值，放到新的数组中。</p><p>负载因子（load factor）是一个介于 0 和 1 之间的数值，用于衡量哈希表的填充程度。它表示哈希表中已存储的元素数量与哈希表容量之间的比例。</p><ul><li>负载因子过高（接近 1）会导致哈希冲突增加，影响查找、插入和删除操作的效率。</li><li>负载因子过低（接近 0）会浪费内存，因为哈希表中有大量未使用的空间。</li></ul><h3 id="HashMap-的put过程："><strong>HashMap 的put过程：</strong></h3><p>1.他会先对key计算扰动hash，通过key.hashCode() ^ (key.hashCode() &gt;&gt;&gt; 16)计算，这样的目的是为了高16位的熵混进去低16位，减少碰撞。</p><p>2.判断当前是不是第一次添加 是的话就创建一个默认长度16，负载因子0.75的数组。</p><p>3.开始计算数组下标index，通过前面计算的hash &amp; (n - 1)来确定位置 这里的n是2的次幂</p><p>4.然后获取当前数组中对应的数据</p><p>5.数组为空，底层会创建一个键值对对象，直接放进去就行了</p><p>6.不为空</p><p>​6.1.如果当前插入的键值对与数组的键值对哈希值一样，也就是插入的键值与插入后的键值一样就把调整当前元素指针，在后面进行替换操作</p><p>​6.1.已经是TreeNode，走红黑树的添加或更新逻辑</p><p>​6.2.是普通Node，走链表的添加或更新逻辑，如果达到树化条件，走树化逻辑</p><p>添加后、返回前检查容量是否达到扩容阈值，如果达到，进行扩容</p><p><img src="/img/covers/image-20251122172610739.png" alt="image-20251122172610739"> <img src="/img/covers/image-20251122175757222.png" alt="image-20251122175757222"></p><h3 id="为什么HashMap的容量是2的n次方">为什么HashMap的容量是2的n次方</h3><h4 id="1-用位运算-n-1-hash-快速代替取模-n">1.用位运算 <code>(n - 1) &amp; hash</code> 快速代替取模 <code>% n</code></h4><p>​在n为偶数时候 n - 1为奇数 （n - 1）&amp; hash等价于 hash % n 并且位运算比取模快得多</p><h4 id="2-保证哈希值在桶上的分布尽可能均匀，避免部分桶永远用不到">2.保证哈希值在桶上的分布尽可能均匀，避免部分桶永远用不到</h4><p>​2 幂次方刚好是偶数，偶数-1 是奇数，奇数的二进制最后一位是 1，也就保证了 <code>hash &amp;(length-1)</code> 的最后一位可能为 0，也可能为 1（取决于 hash 的值），这样可以保证哈希值的均匀分布。</p><h4 id="3-方便扩容时用-oldCap-这一位快速判断元素新位置（JDK1-8-的优化）">3.方便扩容时用 <code>oldCap</code> 这一位快速判断元素新位置（JDK1.8 的优化）</h4><p>桶里每个节点的新位置只和这一位有关：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// oldCap 一定是 2 的幂，比如 16(10000b)</span></span><br><span class="line"><span class="keyword">if</span> ((hash &amp; oldCap) == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 这位是 0：留在原来的 index</span></span><br><span class="line">    newIndex = oldIndex;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 这位是 1：去到 index + oldCap</span></span><br><span class="line">    newIndex = oldIndex + oldCap;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>​</p><p>​JDK 1.8 扩容时利用 <code>hash &amp; oldCap</code> 这位来判断元素是留在原索引还是移动到 <code>index + oldCap</code>，极大简化了 rehash 的过程，这个优化也依赖容量是 2 的幂。</p><h3 id="重写HashMap的equal和hashcode方法需要注意什么？">重写HashMap的equal和hashcode方法需要注意什么？</h3><ul><li>如果o1.equals(o2)，那么o1.hashCode() == o2.hashCode()总是为true的。</li><li>如果o1.hashCode() == o2.hashCode()，并不意味着o1.equals(o2)会为true。</li></ul><h2 id="HashMap-的扩容机制和扩容过程（JDK1-8）">HashMap 的扩容机制和扩容过程（JDK1.8）</h2><h4 id="1）何时扩容？">1）何时扩容？</h4><ul><li>有个阈值：<code>threshold = capacity * loadFactor</code><ul><li>默认：<code>capacity = 16</code>，<code>loadFactor = 0.75</code></li><li>所以初始 threshold = 12</li></ul></li><li>当 <code>size &gt; threshold</code> 时，进行扩容：<ul><li><strong>数组长度 ×2</strong>，比如 16 -&gt; 32。</li></ul></li></ul><h4 id="2）扩容过程（resize-）">2）扩容过程（<code>resize()</code>）</h4><ol><li>创建一个新数组 <code>newTable</code>，长度 = 原来 2 倍。</li><li>遍历旧数组每个桶：<ul><li>如果桶为空，跳过。</li><li>如果桶里只有一个节点，直接搬到新数组对应位置。</li><li>如果桶是红黑树，拆成两棵或调整后搬到新数组中。</li><li>如果桶是链表：<ul><li>JDK1.8 做了一个优化：<ul><li>利用 <code>e.hash &amp; oldCap</code> 的结果来判断节点在新数组中的位置：<ul><li>如果为 0：节点留在原位置 <code>index</code>。</li><li>如果为 1：节点去到 <code>index + oldCap</code>。</li></ul></li></ul></li><li>这样链表可以拆成两个链表，过程更快，也避免 1.7 里“倒序 + 死循环”的问题。</li></ul></li></ul></li></ol><p>扩容是最重的操作：<strong>需要重新分布所有元素</strong>，所以尽量别频繁扩容（比如一开始就知道大概数量，可以传一个合适的 initialCapacity）。</p><h2 id="HashMap-出现-Hash-冲突时怎么办？何时链表进化成红黑树？何时退化？">HashMap 出现 Hash 冲突时怎么办？何时链表进化成红黑树？何时退化？</h2><h4 id="1）hash-冲突的解决方式">1）hash 冲突的解决方式</h4><ul><li>HashMap 使用的是 <strong>“拉链法”</strong>：<ul><li>数组 + 链表/红黑树。</li><li>同一个桶上的多个元素通过 next 指针连成一条链，或组织成一棵红黑树。</li></ul></li></ul><h4 id="2）链表-红黑树（树化）的条件（JDK1-8）">2）链表 -&gt; 红黑树（树化）的条件（JDK1.8）</h4><ul><li>满足 <strong>两个条件</strong> 才会树化：</li></ul><ol><li>单个桶中的链表长度 ≥ <code>TREEIFY_THRESHOLD</code>（默认 8）。</li><li>整个 table 的长度 ≥ <code>MIN_TREEIFY_CAPACITY</code>（默认 64）。</li></ol><blockquote><p>不满足第二个条件时，会优先选择 <strong>扩容</strong> 而不是树化。</p></blockquote><p><strong>原因</strong>：</p><ul><li>如果表太小，说明整体碰撞重；这时扩容可以让数据分摊到更多桶里，比急着树化更划算。</li></ul><h4 id="3）红黑树-链表（退化）的条件">3）红黑树 -&gt; 链表（退化）的条件</h4><ul><li><p>当树中的节点个数 ≤ <code>UNTREEIFY_THRESHOLD</code>（默认 6）时，</p></li><li><p><strong>remove树节点时，如果root、root.left、root.right、root.left.left有一个为null（在移除之前检查），也会退化成链表</strong></p><p><img src="/img/covers/image-20251123013013969.png" alt="image-20251123013013969"></p></li></ul><h3 id="JDK8为什么改用尾插法？">JDK8为什么改用尾插法？</h3><p>JDK8引入了红黑树，那么就可以插入时顺便遍历一遍当前桶有多少元素，决定是否转为红黑树<br>避免多线程下扩容可能产生的死循环</p><h4 id="扩容的时候每个节点都要进行位运算吗？">扩容的时候每个节点都要进行位运算吗？</h4><p>不需要。HashMap 会通过 <code>(e.hash &amp; oldCap)</code> 来判断节点是否需要移动，0 的话保留原索引；1 才需要移动到新索引（原索引 + oldCap）。</p><p>这样就避免了 hashCode 的重新计算，大大提升了扩容的性能。</p><p>所以，哪怕有几十万条数据，可能只有一半的数据才需要移动到新位置。另外，位运算的计算速度非常快，因此，尽管扩容操作涉及到遍历整个哈希表并对每个节点进行判断，但这部分操作的计算成本是相对较低的。</p><h2 id="String的hashCode-如何设计的，为啥每次乘的是31">String的hashCode()如何设计的，为啥每次乘的是31</h2><p>字符串中的每个字符都可以表现为一个数字，称为Si，其中i的范围是0 ~ n - 1<br>散列公式为：S0 * 31 ^ (n - 1) + S1 * 31 ^ (n - 2) + S2 * 31 ^ (n -3) + …  + Sn-1 * 31 ^ (0)<br>31代入公式有较好的散列特性，并且31 * h可以被优化为 h &lt;&lt; 5 - h<br>但这算法时间复杂度o(n)</p><h2 id="哈希冲突解决方法">哈希冲突解决方法:</h2><p>拉链法：哈希冲突时，同一个哈希槽拉成一个链表，HashMap采用该方法<br>开放寻址：寻找其他位置，这就保证了一个哈希槽最多存有一个元素<br>线性探测：哈希冲突时，按顺序往后查找，直到找到第一个为空的槽位，ThreadLocalMap采用该方法<br>二次探测：与线性探测类似，但有规律，比如每次步长是1，2，4，8，16。。。<br>再哈希法：哈希冲突时，换个哈希函数再次哈希</p>]]></content>
       
       
       <categories>
@@ -33,6 +346,120 @@
     
     
     <entry>
+      <title>Volatile原理</title>
+      <link href="/2025/11/23/Volatile%E5%8E%9F%E7%90%86/"/>
+      <url>/2025/11/23/Volatile%E5%8E%9F%E7%90%86/</url>
+      
+        <content type="html"><![CDATA[<p>Volatile原理</p><p><img src="/img/covers/image-20251122222435220.png" alt="image-20251122222435220"></p><p><img src="/img/covers/image-20251122222526124.png" alt="image-20251122222526124"></p><p><img src="/img/covers/image-20251122222611385.png" alt="image-20251122222611385"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Java </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Java </tag>
+            
+            <tag> 并发 </tag>
+            
+            <tag> Volatile </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>MySQL 联合索引的最左匹配原则</title>
+      <link href="/2025/11/22/MySQL%20%E8%81%94%E5%90%88%E7%B4%A2%E5%BC%95%E7%9A%84%E6%9C%80%E5%B7%A6%E5%8C%B9%E9%85%8D%E5%8E%9F%E5%88%99/"/>
+      <url>/2025/11/22/MySQL%20%E8%81%94%E5%90%88%E7%B4%A2%E5%BC%95%E7%9A%84%E6%9C%80%E5%B7%A6%E5%8C%B9%E9%85%8D%E5%8E%9F%E5%88%99/</url>
+      
+        <content type="html"><![CDATA[<h1>MySQL 联合索引的最左匹配原则</h1><p><strong>执行计划基础知识</strong></p><p><strong>possible_keys</strong>：可能用到的索引</p><p><strong>key</strong>：实际用到的索引</p><p><strong>type</strong>:</p><ol><li>ref：当通过普通的二级索引列与常量进行等值匹配的方式 询某个表时</li><li>const：当我们根据主键或者唯一得二级索引列与常数进行等值匹配时，对单表的访问方法就是 const</li><li>range:如果使用索引获取某些单点扫描区间的记录。</li><li>index：当可以使用覆盖 ，但需要扫描全部的索引记录时。</li></ol><p><strong>Extra</strong>:</p><ol><li>Using index 索引覆盖</li><li>Using Where 当某个搜索条件需要在 server 层进行判断时</li><li>Using index for skip scan 跳跃扫描</li><li>Using index condtion 索引下推</li></ol><h2 id="最左匹配原则">最左匹配原则</h2><p>最左优先，以最左边的为起点任何连续的索引都能匹配上。同时遇到范围查询(&gt;、&lt;、between、like)就会停止匹配。</p><p>比如有联合索引 [a、b、c]，where 过滤条件中哪些排列组合可以用到索引？（比如这种：where a=xxx b=xxx and c=xxx）</p><p>以下排列组合都会走索引： a、ab、ac、ba、ca、abc、acb、bac、bca、cab、cba。 必须有一个 a，排列组合中的顺序会被优化器优化，所以不用关心顺序。</p><p>以下排列组合不会走索引： b、c、bc、cb。 因为没有 a。</p><p>关于范围查询： a=xxx and b&lt;10 and b &gt; 5 and c =xxx，c 字段用不到索引，因为 b 是一个范围查询，遇到范围查询就停止了。</p><p>by -<a href="https://juejin.cn/post/7283832557502693413">https://juejin.cn/post/7283832557502693413</a></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+            <tag> 索引 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>redis做为缓存，mysql的数据如何与redis进行同步呢？（双写一致性）</title>
+      <link href="/2025/11/14/redis%E5%81%9A%E4%B8%BA%E7%BC%93%E5%AD%98%EF%BC%8Cmysql%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A6%82%E4%BD%95%E4%B8%8Eredis%E8%BF%9B%E8%A1%8C%E5%90%8C%E6%AD%A5%E5%91%A2%EF%BC%9F%EF%BC%88%E5%8F%8C%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%89/"/>
+      <url>/2025/11/14/redis%E5%81%9A%E4%B8%BA%E7%BC%93%E5%AD%98%EF%BC%8Cmysql%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A6%82%E4%BD%95%E4%B8%8Eredis%E8%BF%9B%E8%A1%8C%E5%90%8C%E6%AD%A5%E5%91%A2%EF%BC%9F%EF%BC%88%E5%8F%8C%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%89/</url>
+      
+        <content type="html"><![CDATA[<h2 id="redis做为缓存，mysql的数据如何与redis进行同步呢？（双写一致性）"><strong>redis做为缓存，mysql的数据如何与redis进行同步呢？（双写一致性）</strong></h2><p>在项目中，我们主要通过 <strong>Redisson 的读写锁机制</strong> 来保证数据的<strong>强一致性</strong>。</p><p>当执行<strong>读取操作</strong>时，我们会加上<strong>读锁（共享锁）</strong>，这样可以做到：</p><ul><li>读读不互斥；</li><li>读写互斥。</li></ul><p>而在<strong>更新数据</strong>时，我们会加上<strong>写锁（排他锁）</strong>，此时写写、读写都互斥。<br>这样可以确保在写入数据库的同时，其他线程无法读取缓存数据，从而避免出现<strong>脏读</strong>或<strong>不一致</strong>的情况。<br>这里需要注意的一点是：<strong>读写方法必须使用同一把锁</strong>，才能真正保证互斥关系成立。</p><hr><p>除了使用分布式锁，我们也考虑过使用 <strong>“延迟双删”策略</strong> 来实现<strong>最终一致性</strong>。</p><p>具体做法是：</p><ol><li>先删除缓存；</li><li>再更新数据库；</li><li>最后延时一段时间后，再删除一次缓存。</li></ol><p>不过，延迟的时间点很难精确把握。在延时窗口内仍可能出现<strong>脏数据</strong>问题，无法满足强一致性场景，因此我们最终没有采用这种方式。</p><hr><p>在我最近做的项目中（例如简历中提到的 <em>xxxx 功能</em>），<br>系统对数据一致性的实时性要求没有那么高，可以接受一定的同步延时。</p><p>因此我们采用了 <strong>阿里巴巴的 Canal 组件</strong> 来实现<strong>最终一致性的数据同步</strong>。</p><p>Canal 的原理是：</p><ul><li>将自己伪装成 MySQL 的从节点；</li><li>通过监听 <strong>binlog（数据库增删改日志）</strong> 来捕获数据变更；</li><li>Canal 服务解析 binlog 后，将变更数据推送给客户端；</li><li>客户端根据变更内容更新或删除 Redis 缓存。</li></ul><p>这种方式的优点是：</p><ul><li><strong>不需要修改业务代码</strong>；</li><li>同步过程自动化；</li><li>能在大多数业务场景下保证“最终一致性”。</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Redis </tag>
+            
+            <tag> 缓存 </tag>
+            
+            <tag> 数据同步 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Redis分布式锁redisson看门狗机制</title>
+      <link href="/2025/11/14/Redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81redisson%E7%9C%8B%E9%97%A8%E7%8B%97%E6%9C%BA%E5%88%B6/"/>
+      <url>/2025/11/14/Redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81redisson%E7%9C%8B%E9%97%A8%E7%8B%97%E6%9C%BA%E5%88%B6/</url>
+      
+        <content type="html"><![CDATA[<h3 id="Redis分布式锁方案">Redis分布式锁方案</h3><p>使用 Redis 的 <code>SET key value NX</code> EX实现分布式锁时，主要问题是锁过期时间不好设置：如果设置过短，业务未完成锁就过期；设置过长，会降低系统并发度。为此可以使用 Redisson 封装的分布式锁，它内部通过「看门狗机制」自动续期锁（默认锁 30 秒，每 10 秒续期一次），同时通过 Lua 脚本保证加解锁的原子性，从而确保分布式环境下的并发安全。</p><h3 id="Redisson分布式锁自动续约机制（看门狗）">Redisson分布式锁自动续约机制（看门狗）</h3><p>线程1尝试tryLock锁未指定锁的过期时间 获取成功后会自动启动看门狗机制</p><p><strong>初始加锁</strong>：</p><p>​当调用 <code>lock()</code> 时，Redisson 会通过 Lua 脚本向 Redis 发送加锁命令，设置锁的初始过期时间为 <code>LockWatchdogTimeout</code>（默认 30 秒）。</p><p>​锁的数据结构为 <code>Hash</code>，键为锁名称，<code>field</code> 为线程 ID，<code>value</code> 为重入次数。</p><p><strong>启动定时任务</strong>：</p><p>​加锁成功后，Redisson 会启动一个<strong>后台定时任务</strong>（通过 Netty 的 <code>HashedWheelTimer</code> 实现），每隔 10 秒执行一次。</p><h5 id="续期逻辑：">续期逻辑：</h5><p>​定时任务通过lua脚本检查锁是否存在并且被当前线程持有</p><p>​若条件满足，则通过 <code>pexpire</code> 命令将锁的过期时间重置为 <code>LockWatchdogTimeout</code>（30 秒）。</p><p>​续期成功后，继续等待下一个检查周期。</p><p><strong>锁释放时终止续期</strong>：</p><p>​当调用 <code>unlock()</code> 释放锁时，会同时取消续期的定时任务，避免无限续期。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Redis </tag>
+            
+            <tag> 分布式锁 </tag>
+            
+            <tag> Redisson </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>LeetCode Hot 100 - 24. 两两交换链表中的节点</title>
       <link href="/2025/11/11/leetcode/hot100/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9/"/>
       <url>/2025/11/11/leetcode/hot100/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9/</url>
@@ -46,6 +473,64 @@
           
       </categories>
       
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Redis的数据过期淘汰策略</title>
+      <link href="/2025/10/27/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E8%BF%87%E6%9C%9F%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/"/>
+      <url>/2025/10/27/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E8%BF%87%E6%9C%9F%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/</url>
+      
+        <content type="html"><![CDATA[<h3 id="Redis-的数据过期策略"><strong>Redis 的数据过期策略</strong></h3><p>Redis 采用 <strong>「惰性删除 + 定期删除」</strong> 两种策略相结合的方式，在 <strong>CPU 性能开销</strong> 与 <strong>内存占用</strong> 之间取得平衡。</p><hr><h4 id="一、惰性删除（Lazy-Expiration）"><strong>一、惰性删除（Lazy Expiration）</strong></h4><p>当客户端访问或修改某个键时，Redis 会在操作前调用 <code>expireIfNeeded()</code> 函数检查该键是否已过期：</p><ul><li><strong>若已过期</strong>：<br>Redis 会立即删除该键，然后向客户端返回 <code>null</code>。<br>删除方式由配置项 <code>lazyfree-lazy-expire</code> 决定：<ul><li>若开启（<code>yes</code>），则采用 <strong>异步删除</strong>；</li><li>若关闭（<code>no</code>），则采用 <strong>同步删除</strong>。</li></ul></li><li><strong>若未过期</strong>：<br>直接返回该键对应的正常值，不做任何额外处理。</li></ul><p>这种方式的优点是 <strong>删除时机精准、不会浪费 CPU 时间</strong>；<br>缺点是：<strong>若某些过期键一直未被访问，就无法被清除，会长期占用内存</strong>。</p><hr><h4 id="二、定期删除（Active-Expiration-Cycle）"><strong>二、定期删除（Active Expiration Cycle）</strong></h4><p>为了解决惰性删除的不足，Redis 还会周期性地扫描部分键空间，清除已过期的数据。</p><h5 id="1-检查频率"><strong>1. 检查频率</strong></h5><p>Redis 默认每秒执行 <strong>10 次过期扫描</strong>，这一频率由配置文件 <code>redis.conf</code> 中的参数 <code>hz</code> 控制：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hz 10</span><br></pre></td></tr></table></figure><p>即 Redis 每隔约 <strong>100 毫秒</strong> 触发一次过期检测。</p><hr><h5 id="2-检查机制"><strong>2. 检查机制</strong></h5><p>Redis 并不会遍历所有键，而是采用「<strong>随机抽查</strong>」机制来控制 CPU 占用。<br>该逻辑由 <code>expire.c</code> 文件中的 <code>activeExpireCycle()</code> 函数实现，核心过程如下：</p><ol><li>从每个数据库的「过期字典」中 <strong>随机抽取 20 个 key</strong>（数量由常量 <code>ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP = 20</code> 决定）；</li><li>检查这 20 个 key 是否过期，并删除已过期的 key；</li><li>如果本轮抽查中，<strong>超过 25%（即 5 个）键过期</strong>，说明系统中可能仍存在大量过期数据，Redis 会继续重复步骤 1，进行新一轮检查；</li><li>若过期比例低于 25%，则认为当前负载正常，Redis 会停止本轮扫描，等待下一次周期执行。</li></ol><h3 id="介绍一下Redis-内存淘汰策略">介绍一下Redis 内存淘汰策略</h3><p>在 32 位操作系统中，maxmemory 的默认值是 3G，因为 32 位的机器最大只支持 4GB 的内存，而系统本身就需要一定的内存资源来支持运行，所以 32 位操作系统限制最大 3 GB 的可用内存是非常合理的，这样可以避免因为内存不足而导致 Redis 实例崩溃。</p><p><em>1、不进行数据淘汰的策略：</em></p><ul><li><strong>noeviction</strong>（Redis3.0之后，默认的内存淘汰策略） ：它表示当运行内存超过最大设置内存时，不淘汰任何数据，这时如果有新的数据写入，会报错通知禁止写入，不淘汰任何数据，但是如果没用数据写入的话，只是单纯的查询或者删除操作的话，还是可以正常工作。</li></ul><p><em>2、进行数据淘汰的策略：</em></p><p>针对「进行数据淘汰」这一类策略，又可以细分为「在设置了过期时间的数据中进行淘汰」和「在所有数据范围内进行淘汰」这两类策略。</p><ul><li>在设置了过期时间的数据中进行淘汰：<ul><li><strong>volatile-random</strong>：随机淘汰设置了过期时间的任意键值；</li><li><strong>volatile-ttl</strong>：优先淘汰更早过期的键值。</li><li><strong>volatile-lru</strong>（Redis3.0 之前，默认的内存淘汰策略）：淘汰所有设置了过期时间的键值中，最久未使用的键值；</li><li><strong>volatile-lfu</strong>（Redis 4.0 后新增的内存淘汰策略）：淘汰所有设置了过期时间的键值中，最少使用的键值；</li></ul></li><li>在所有数据范围内进行淘汰：<ul><li><strong>allkeys-random</strong>：随机淘汰任意键值;</li><li><strong>allkeys-lru</strong>：淘汰整个键值中最久未使用的键值；</li><li><strong>allkeys-lfu</strong>（Redis 4.0 后新增的内存淘汰策略）：淘汰整个键值中最少使用的键值。</li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Redis </tag>
+            
+            <tag> 过期策略 </tag>
+            
+            <tag> 淘汰策略 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>缓存穿透，雪崩，击穿</title>
+      <link href="/2025/10/25/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%EF%BC%8C%E9%9B%AA%E5%B4%A9%EF%BC%8C%E5%87%BB%E7%A9%BF/"/>
+      <url>/2025/10/25/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%EF%BC%8C%E9%9B%AA%E5%B4%A9%EF%BC%8C%E5%87%BB%E7%A9%BF/</url>
+      
+        <content type="html"><![CDATA[<h3 id="缓存穿透">缓存穿透</h3><p>缓存穿透指的是：<strong>一个缓存和数据库中都不存在的数据</strong>，由于数据库无法写入缓存，导致频繁请求直接打到数据库，从而造成数据库压力过大甚至被“打穿”。</p><p>常见的解决方法包括：<strong>缓存空值</strong> 或 <strong>布隆过滤器</strong>。</p><p>布隆过滤器由一个<strong>全 0 的位图数组</strong>和 <strong>n 个哈希函数</strong>组成。当一个数据在请求缓存前，会先经过布隆过滤器。过滤器会通过 n 个哈希函数计算出 n 个哈希值，再分别对数组长度取模，并将对应的数组下标置为 1。</p><p>查询时，只需要查看位图数组中这 n 个位置是否全部为 1：</p><ul><li>若存在某个位为 0，则说明该数据<strong>一定不存在</strong>于数据库中；</li><li>若全部为 1，则说明该数据<strong>可能存在</strong>，但<strong>不一定真的存在</strong>，因为可能出现哈希碰撞。</li></ul><p>因此，布隆过滤器判断“存在”时并不能保证数据真的存在，但判断“不存在”时一定准确。</p><h3 id="缓存雪崩">缓存雪崩</h3><p>缓存雪崩指的是：<strong>大量的缓存 Key 在同一时间失效</strong>，或者 <strong>Redis 服务器宕机</strong>，导致所有请求同时打到数据库，造成数据库瞬时压力过大，甚至宕机的情况。</p><p><strong>解决方法：</strong><br>为缓存设置 <strong>固定过期时间 + 随机过期时间</strong>，让不同 Key 的过期时间错开，避免在同一时间集中失效。</p><h3 id="缓存击穿">缓存击穿</h3><p>缓存击穿指的是一个热点key设置了时间了过后 时间过期了 恰好这个时候大量请求打到数据库 让数据库压力大</p><p><strong>解决方案：</strong></p><h5 id="方案一：互斥锁（分布式锁）">方案一：互斥锁（分布式锁）</h5><p>当缓存失效时，不立即去加载数据库，而是<strong>先使用 Redis 的 <code>SETNX</code> 命令设置互斥锁</strong>。</p><ul><li>若设置成功（即当前线程获得锁），则执行 <code>load db</code> 操作并回填缓存；</li><li>若设置失败（说明已有线程在加载数据），则稍后<strong>重试获取缓存</strong>。</li></ul><p>优点：保证数据一致性。<br>缺点：性能稍差，可能存在死锁风险。</p><hr><h5 id="方案二：逻辑过期">方案二：逻辑过期</h5><p>设置 Key 时，不给 Redis 设置真实的过期时间，而是<strong>在 Value 中自带一个逻辑过期时间字段</strong>。<br>实现思路如下：</p><ol><li>设置缓存时，将过期时间作为字段与数据一起存入；</li><li>查询时，先从 Redis 获取数据并判断逻辑时间是否过期；</li><li>若已过期，则<strong>异步开启一个线程进行数据刷新</strong>，同时返回旧数据给用户（保证高可用）。</li></ol><p>优点：高性能、高可用。<br>缺点：数据可能短时间内不一致。</p><hr><p><strong>总结：</strong></p><ul><li>若追求<strong>强一致性</strong> → 使用 <strong>分布式锁方案</strong>；</li><li>若追求<strong>高性能、高可用性</strong> → 使用 <strong>逻辑过期方案</strong>。</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Redis </tag>
+            
+            <tag> 缓存 </tag>
+            
+            <tag> 性能优化 </tag>
+            
+        </tags>
       
     </entry>
     
