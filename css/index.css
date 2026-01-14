@@ -1327,8 +1327,8 @@ canvas:not(#ribbon-canvas),
   --global-font-size: 14px;
   --global-bg: #fff;
   --font-color: #4c4948;
-  --hr-border: #a4d8fa;
-  --hr-before-color: #80c8f8;
+  --hr-border: #e8e8eb;
+  --hr-before-color: #dfdfe3;
   --search-bg: #f6f8fa;
   --search-input-color: #4c4948;
   --search-a-color: #4c4948;
@@ -1340,10 +1340,10 @@ canvas:not(#ribbon-canvas),
   --tab-button-hover-bg: #dcdcdc;
   --tab-button-active-bg: #fff;
   --card-bg: #fff;
-  --card-meta: #858585;
+  --card-meta: #6e6e73;
   --sidebar-bg: #f6f8fa;
   --sidebar-menu-bg: #fff;
-  --btn-hover-color: #ff7242;
+  --btn-hover-color: #6fc6ff;
   --btn-color: #fff;
   --btn-bg: #49b1f5;
   --text-bg-hover: rgba(73,177,245,0.7);
@@ -1357,9 +1357,9 @@ canvas:not(#ribbon-canvas),
   --toc-link-color: #666261;
   --card-box-shadow: 0 3px 8px 6px rgba(7,17,27,0.05);
   --card-hover-box-shadow: 0 3px 8px 6px rgba(7,17,27,0.09);
-  --pseudo-hover: #ff7242;
+  --pseudo-hover: #6fc6ff;
   --headline-presudo: #a0a0a0;
-  --scrollbar-color: #49b1f5;
+  --scrollbar-color: #c7c7cc;
   --default-bg-color: #49b1f5;
   --zoom-bg: #fff;
   --mark-bg: rgba(0,0,0,0.3);
@@ -1460,7 +1460,7 @@ table td {
   vertical-align: middle;
 }
 *::selection {
-  background: #00c4b6;
+  background: #bfe5ff;
   color: #f7f7f7;
 }
 button {
@@ -1658,8 +1658,8 @@ figure.highlight pre .javascript .function {
 }
 .container code {
   padding: 2px 5px;
-  background: rgba(27,31,35,0.05);
-  color: #f47466;
+  background: #111216;
+  color: #f5f5f7;
 }
 .container pre {
   padding: 10px 20px;
@@ -2250,6 +2250,19 @@ figure.highlight pre .javascript .function {
   position: relative;
   overflow: hidden;
   margin-bottom: 20px;
+  display: inline-block;
+  width: calc(100% / 2 - 8px);
+  vertical-align: top;
+}
+@media screen and (max-width: 768px) {
+  #recent-posts .recent-post-item {
+    width: 100%;
+  }
+}
+@media screen and (min-width: 2000px) {
+  #recent-posts .recent-post-item {
+    width: calc(100% / 3 - 8px);
+  }
 }
 #recent-posts .recent-post-item:hover .post-bg {
   -webkit-transform: scale(1.1);
@@ -2265,13 +2278,16 @@ figure.highlight pre .javascript .function {
 #recent-posts .recent-post-item .post_cover {
   overflow: hidden;
   width: 100%;
-  height: 230px;
+  height: 17em;
 }
-@media screen and (max-width: 768px) {
-  #recent-posts .recent-post-item .post_cover {
-    width: 100%;
-    height: 230px;
-  }
+#recent-posts .recent-post-item .post_cover:before {
+  position: absolute;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(18,18,18,0.4);
+  content: '';
+  backdrop-filter: blur(3px);
 }
 #recent-posts .recent-post-item .post_cover .post-bg {
   z-index: -4;
@@ -2284,6 +2300,20 @@ figure.highlight pre .javascript .function {
     padding: 20px 20px 30px;
     width: 100%;
   }
+}
+#recent-posts .recent-post-item >.recent-post-info:not(.no-cover) {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 100%;
+  color: var(--text-highlight-color);
+  -webkit-transform: translateY(-50%);
+  -moz-transform: translateY(-50%);
+  -o-transform: translateY(-50%);
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+  --text-highlight-color: #fff;
+  --card-meta: rgba(255,255,255,0.7);
 }
 #recent-posts .recent-post-item >.recent-post-info.no-cover {
   padding: 35px 30px;
@@ -2875,7 +2905,7 @@ figure.highlight pre .javascript .function {
   color: #49b1f5;
 }
 #aside-content #card-toc .toc-content .toc-link.active {
-  background: #00c4b6;
+  background: #49b1f5;
   color: #fff;
 }
 #aside-content .sticky_layout:only-child > :first-child {
@@ -3303,12 +3333,12 @@ figure.highlight pre .javascript .function {
   content: '';
 }
 #page-header.full_page {
-  height: 100vh;
+  height: 180px;
   background-attachment: fixed;
 }
 #page-header.full_page #site-info {
   position: absolute;
-  top: 43%;
+  top: 30%;
   padding: 0 10px;
   width: 100%;
 }
@@ -3786,7 +3816,7 @@ figure.highlight pre .javascript .function {
   text-align: center;
 }
 #pagination .page-number.current {
-  background: #00c4b6;
+  background: #49b1f5;
   color: var(--white);
 }
 #pagination .full-width {
@@ -4400,7 +4430,7 @@ figure.highlight pre .javascript .function {
 #waline-wrap {
   --waline-font-size: 1.1em;
   --waline-theme-color: #49b1f5;
-  --waline-active-color: #ff7242;
+  --waline-active-color: #6fc6ff;
 }
 #waline-wrap .wl-comment-actions > button:not(last-child) {
   padding-right: 4px;
@@ -5839,7 +5869,7 @@ blockquote.pullquote.right {
   box-shadow: none;
 }
 [data-theme='dark'] .container .note code {
-  background: rgba(27,31,35,0.05);
+  background: #111216;
 }
 [data-theme='dark'] .container .aplayer {
   filter: brightness(0.8);
