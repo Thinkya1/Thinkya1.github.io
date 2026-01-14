@@ -53,6 +53,11 @@
   --card-meta: inherit;
 }
 
+#recent-posts .recent-post-item > .recent-post-info.no-cover {
+  width: 100% !important;
+  padding: 30px 40px !important;
+}
+
 #recent-posts .recent-post-item .post_cover:before {
   content: none !important;
 }
