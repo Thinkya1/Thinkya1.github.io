@@ -4,6 +4,19 @@
   
     
     <entry>
+      <title></title>
+      <link href="/2026/01/26/cookie%E3%80%81session%E3%80%81token/"/>
+      <url>/2026/01/26/cookie%E3%80%81session%E3%80%81token/</url>
+      
+        <content type="html"><![CDATA[<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">title: cookie、session、token</span><br><span class="line">date: 2026-01-26 15:53:00</span><br><span class="line">categories:</span><br><span class="line">  - Java</span><br><span class="line">tags:</span><br><span class="line">  - Java</span><br><span class="line">  - 网络</span><br><span class="line">  - 通信</span><br></pre></td></tr></table></figure><h1 id="cookie-session-token"><a class="markdownIt-Anchor" href="#cookie-session-token"></a> cookie、session、token</h1><p>cookie<br />服务端发给客户端，交给客户端保存的数据，每次请求，客户端带上这些数据，服务端就读取这些数据，鉴别身份。<br />完全由客户端存储，和域名绑定，且不可跨域。<br />数据大小一般有限制。<br />容易被伪造，且客户端清除数据就丢失了</p><p>session<br />服务端将客户端的信息保存在服务端，然后将一个sessionId传给客户端，客户端保存起来，下次请求携带sessionId，服务端就通过id找到客户端的身份数据。<br />真正的数据存储在服务端，数据安全，且数据格式由服务端自定义。<br />sessionId一般客户端通过cookie的形式存储起来，也有可能通过URL拼接来传递（防止浏览器不支持cookie）。</p><p>token<br />将数据进行加密后，交给客户端存储，客户端每次请求携带这个数据，服务端解密，读出数据。<br />最常见的实现就是JWT令牌<br />客户端一般也是通过cookie存储<br />支持跨域，只要数据能正确解密出来就没问题</p><p>总结<br />可以看到，这三个东西并不是对立的，一般cookie作为底层技术支撑session和token的实现，而session和token的区别主要就在于，session是把数据存在服务端，而token是把数据加密起来交给客户端存储。</p>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>MySQL的锁</title>
       <link href="/2026/01/01/MySQL%E9%94%81/"/>
       <url>/2026/01/01/MySQL%E9%94%81/</url>
@@ -122,7 +135,7 @@
       <link href="/2025/12/25/SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B/"/>
       <url>/2025/12/25/SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B/</url>
       
-        <content type="html"><![CDATA[<h1 id="springmvc执行流程"><a class="markdownIt-Anchor" href="#springmvc执行流程"></a> SpringMVC执行流程</h1><p>请求先到 <strong>DispatcherServlet（前端控制器）</strong>，它负责调度 <strong>HandlerMapping → HandlerAdapter → Controller → ViewResolver → View</strong>。</p><p>Spring MVC 采用前端控制器模式，所有请求先进入 DispatcherServlet。DispatcherServlet 通过 HandlerMapping 找到对应的 Controller，再通过 HandlerAdapter 调用方法执行。Controller 返回结果后，如果是视图名则交给 ViewResolver 解析并渲染视图；如果是 @ResponseBody，则通过 HttpMessageConverter 转换为 JSON 返回给客户端。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="springmvc执行流程"><a class="markdownIt-Anchor" href="#springmvc执行流程"></a> SpringMVC执行流程</h1><p>请求先到 <strong>DispatcherServlet（前端控制器）</strong>，它负责调度 <strong>HandlerMapping → HandlerAdapter → Controller → ViewResolver → View</strong>。</p><p>Spring MVC 采用前端控制器模式，所有请求先进入 DispatcherServlet。DispatcherServlet 通过 HandlerMapping 找到对应的 Controller，再通过 HandlerAdapter 调用方法执行。Controller 返回结果后，如果是视图名则交给 ViewResolver 解析并渲染视图；如果是 @ResponseBody，则通过 HttpMessageConverter 转换为 JSON 返回给客户端。</p><h3 id="springmvc是什么"><a class="markdownIt-Anchor" href="#springmvc是什么"></a> SpringMVC是什么?</h3><p>Spring MVC 是 Spring 提供的一个基于 MVC 设计模式的 Web 框架，通过 DispatcherServlet 作为前端控制器，结合 HandlerMapping、HandlerAdapter 等组件完成请求的分发和处理，支持注解方式开发，能够方便地实现请求参数绑定和响应结果返回。</p>]]></content>
       
       
       <categories>
