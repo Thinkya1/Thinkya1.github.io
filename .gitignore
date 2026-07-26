@@ -5,3 +5,8 @@ db.json
 node_modules/
 public/
 .deploy_git/
+
+# Obsidian 易变文件
+source/.obsidian/workspace.json
+source/.obsidian/workspace-mobile.json
+source/.obsidian/cache/
