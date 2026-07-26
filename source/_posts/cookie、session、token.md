@@ -1,19 +1,14 @@
 ---
-title: ""
+title: "cookie、session、token"
 date: 2026-01-26 15:54:15
 updated: 2026-04-07 22:26:02
----
-
-```
-title: cookie、session、token
-date: 2026-01-26 15:53:00
 categories:
   - Java
 tags:
   - Java
   - 网络
   - 通信
-```
+---
 
 # cookie、session、token
 
