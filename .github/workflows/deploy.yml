@@ -14,6 +14,10 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  # 文章日期按东八区解析，保证 URL 中的日期与本地一致
+  TZ: Asia/Shanghai
+
 jobs:
   build:
     runs-on: ubuntu-latest
