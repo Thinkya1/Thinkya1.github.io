@@ -70,6 +70,16 @@ site_footer:
   analytics:
   copyright: '[Copyright © 2024 - 2026 彬子](/)'
 
+# 配色：去掉默认的绿色光效，改为中性灰 + 克制的蓝色链接（参考 kaiyi.cool 的朴素风格）
+color_scheme:
+  common:
+    theme: '#5f6672'
+    link: '#4a8bfd'
+    button: '#5f6672'
+    hover: '#4a8bfd'
+    inner: '#fff'
+    selection: 'alpha(#4a8bfd, 0.2)'
+
 # 插件：关掉用不到的
 plugins:
   sitesjs:
