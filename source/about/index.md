@@ -5,7 +5,7 @@ comments: false
 sidebar: []
 ---
 
-我是彬子，这里记录我的学习笔记和技术分享。
+我是biny,记录一下自己的学习过程
 
 - GitHub：[Thinkya1](https://github.com/Thinkya1)
-- 邮箱：biny2778@outlook.com
+- 邮箱：zhubinjian06@163.com
