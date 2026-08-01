@@ -1,12 +1,14 @@
 ---
-title: "AIO BIO NIO区别？"
-date: 2025-12-17 21:46:00
+title: AIO BIO NIO区别？
+date: 2026-07-30 17:32
 updated: 2026-04-07 22:26:02
 categories:
-  - "Java"
+  - Java
+  - 未分类
 tags:
-  - "Java"
-  - "IO"
+  - Java
+  - IO
+  - 随笔
 ---
 
 # AIO BIO NIO区别？

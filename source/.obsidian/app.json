@@ -1,9 +1,5 @@
 {
-  "attachmentFolderPath": "img/covers",
-  "useMarkdownLinks": true,
-  "newLinkFormat": "absolute",
-  "alwaysUpdateLinks": true,
-  "newFileLocation": "folder",
-  "newFileFolderPath": "_posts",
-  "showUnsupportedFiles": false
+  "promptDelete": false,
+  "newFileLocation": "current",
+  "attachmentFolderPath": "img/covers"
 }
