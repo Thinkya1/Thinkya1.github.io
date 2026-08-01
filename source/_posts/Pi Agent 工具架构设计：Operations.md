@@ -2,15 +2,14 @@
 title: Pi Agent 工具架构设计：Operations 抽象与 Workspace 切换
 date: 2026-08-01 17:05
 categories:
-  - 未分类
+  - Agent
+  - Tool
+  - 架构设计
 tags:
   - Agent
   - Tool
   - 架构设计
 ---
-
-# Pi Agent 工具架构设计：Operations 抽象与 Workspace 切换
-
 在 Pi Agent 的工具系统中，**Operations 抽象** 是核心设计之一。它把工具的执行逻辑与具体文件系统实现解耦，让 Agent 可以在本地、SSH、Docker 等不同环境中灵活切换。
 
 本文主要分享工具架构的核心设计思路，包括抽象接口、依赖注入、闭包固定实例，以及 Workspace 切换机制。
