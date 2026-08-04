@@ -385,16 +385,3 @@ Pi Agent 的上下文工程可以概括为一条从原始事件到模型消息�
 
 模型不需要记住一切，但当前这一轮必须看到最有用的那部分。Pi 的实现值得研究的地方，也正在这里。它没有把上下文当作一个越堆越大的文本框，而是把上下文变成了可以截断、加载、压缩、持久化和重新投影的工程对象。
 
-### 参考资料
-
-- [Pi Agent Book，第 8 章，上下文工程](https://dg-ai-notes.pages.dev/modules/ch08-context-engineering/)
-- [Pi 官方 Compaction 文档](https://pi.dev/docs/latest/compaction)
-- [Pi Agent Core README，消息转换链](https://github.com/earendil-works/pi/blob/main/packages/agent/README.md)
-- [Session format，会话树与摘要条目](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/session-format.md)
-- [Pi README，运行权限说明](https://github.com/earendil-works/pi)
-- [truncate.ts，工具输出截断实现](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/tools/truncate.ts)
-- [resource-loader.ts，项目上下文文件加载](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/resource-loader.ts)
-- [system-prompt.ts，系统提示词组装](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/system-prompt.ts)
-- [skills.ts，Skills 清单和懒加载契约](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/skills.ts)
-- [branch-summarization.ts，分支摘要路径与 LCA 处理](https://github.com/earendil-works/pi/blob/main/packages/agent/src/harness/compaction/branch-summarization.ts)
-- [compaction.md，压缩与分支摘要扩展](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/compaction.md)
