@@ -2,25 +2,14 @@
 title: Pi Agent loop
 date: 2026-08-04 23:47
 categories:
-  - 未分类
   - AI
   - Agent
+tags:
+  - Agent
   - loop
-tags:
+  - Harness
+  - 总结
 ---
----
-title: "PI Agent Loop "
-source:
-author:
-published:
-created: 2026-08-05
-description: "Agent Loop 是 Pi 的引擎。本章看模型如何被循环调用、停止条件如何决定下一轮。"
-tags:
----
-> 前一章我们看了 Pi 的分层架构。架构只是”骨架”——Agent 真正的生命力来自”循环”。这一章，我们从最基础的问题出发： **为什么需要循环？循环怎么转？什么时候停？** 然后追踪一条用户消息的完整旅程，看清 Agent Loop 的每一次心跳。
-
----
-
 ## 一、引子：大模型的三种用法
 
 在聊 Agent Loop 之前，我们先退一步，看看”使用大模型”这件事本身有几种模式。这对理解”为什么需要循环”至关重要。
