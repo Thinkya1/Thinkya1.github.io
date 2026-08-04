@@ -96,7 +96,7 @@ function wrapToolDefinition(tool: AgentTool): ToolDefinition {
 - **扩展性强**：想加新特性（日志、限流、缓存）时，只需要在第三层修改。
 - **可组合性好**：可以用不同的 `wrapToolDefinition` 实现不同的策略。
 
-## 二、五步管道：工具调用不是”调个函数就完了”
+## 二、五步管道
 
 模型调用工具时，不是直接调用一个函数，而是走了一套完整的**五步管道**：
 
